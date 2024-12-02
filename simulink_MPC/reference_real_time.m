@@ -10,11 +10,11 @@ function [v_ref, x_ref, y_ref] = reference_real_time(V_ref,t)
 %   y_ref - Reference y position in meters (scalar)
 
     %% Parameters
-    a_y_comf = 1.5;                 % Lateral acceleration (m/s^2)
+    a_y_comf = 1;                 % Lateral acceleration (m/s^2)
     R = V_ref^2 / a_y_comf;         % Turn radius (m)
     delta_theta = pi/2;        % 90 degrees in radians
     L_turn = R * delta_theta;  % Arc length for the turn (m)
-    L_straight = 100;          % Length of the straight segment before the turn (m)
+    L_straight = 500;          % Length of the straight segment before the turn (m)
     
     %% Time Calculations
     t_straight = L_straight / V_ref;   % Time to traverse the straight segment (s)
@@ -30,12 +30,12 @@ function [v_ref, x_ref, y_ref] = reference_real_time(V_ref,t)
         % Circular turn
         t_turn_current = t - t_straight;
         theta = (V_ref * t_turn_current) / R;  % Current angle in radians
-        
+
         % Clamp theta to not exceed delta_theta
         if theta > delta_theta
             theta = delta_theta;
         end
-        
+
         % Position on the circular arc
         x_ref = L_straight + R * sin(theta);
         y_ref = R * (1 - cos(theta));

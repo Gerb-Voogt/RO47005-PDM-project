@@ -64,7 +64,6 @@ par.kseta   = 0.6;            % yaw damping
 par.tau     = 0.002;          % yaw delay
 
 % Minimal speed
-% par.V0 = 50/3.6;                % initial speed, km/h
 par.V0 = 100/3.6;                % initial speed, km/h
 par.w0 = par.V0 / par.Reff;         % initial wheel angular velocity, rad/s
 
@@ -91,7 +90,7 @@ Control delta T_wheel; % definition of controller input
 beta = atan(par.l_r * tan (delta) / par.L);
 
 f_ctrl = [
-    dot(vx)  == (T_wheel * par.Reff) / par.mass + vy * r;...
+    dot(vx)  == (T_wheel / par.Reff) / par.mass + vy * r;...
     dot(Xp)  == vx * cos(yaw) - vy * sin(yaw);...
     dot(Yp)  == vx * sin(yaw) + vy*cos(yaw);...
     dot(vy)  == -((par.Calpha_front + par.Calpha_rear)/(par.mass*vx))*vy + (((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.mass*vx)) - vx)*r + (par.Calpha_front*delta)/par.mass;...
@@ -202,12 +201,12 @@ input.yN = X0.';                        % terminal reference, size Np + 1
 % input.WN = diag([0 0 0 0]);             % terminal weight tuning
 
 % Higher weight indicates higher importance
-w_vx = 1;        % Weight for longitudinal velocity
+w_vx = 5e-1;        % Weight for longitudinal velocity
 w_yaw = 0;       % Weight for yaw angle
-w_Xp = 1;        % Weight for x-position
+w_Xp = 1e-1;        % Weight for x-position
 w_vy = 0;        % Weight for lateral velocity
 w_r = 0;         % Weight for yaw rate
-w_Yp = 1; %1e-1;     % Weight for y-position
+w_Yp = 1e-2;     % Weight for y-position
 
 w_delta = 0;     % Weight for steering angle
 w_T_wheel = 0; % Weight for wheel torque

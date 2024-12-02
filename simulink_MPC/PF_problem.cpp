@@ -86,7 +86,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     ocp1.minimizeLSQEndTerm(acadodata_M2, acadodata_f2);
     ocp1.subjectTo(0.00000000000000000000e+00 <= vx <= 4.72222222222222214327e+01);
     DifferentialEquation acadodata_f3;
-    acadodata_f3 << dot(vx) == (3.03499999999999992006e-01/1.38000000000000000000e+03*T_wheel+r*vy);
+    acadodata_f3 << dot(vx) == (1/3.03499999999999992006e-01/1.38000000000000000000e+03*T_wheel+r*vy);
     acadodata_f3 << dot(Xp) == (cos(yaw)*vx-sin(yaw)*vy);
     acadodata_f3 << dot(Yp) == (cos(yaw)*vy+sin(yaw)*vx);
     acadodata_f3 << dot(vy) == ((-1/1.38000000000000000000e+03*3.10000000000000000000e+05/vx)*vy+(1.01060000000000000000e+05/1.38000000000000000000e+03/vx-vx)*r+1.20000000000000000000e+05/1.38000000000000000000e+03*delta);
