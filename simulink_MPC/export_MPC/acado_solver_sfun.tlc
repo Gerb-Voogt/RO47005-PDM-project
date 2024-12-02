@@ -3,8 +3,8 @@
 %% Description:
 %%   Simulink Coder TLC Code Generation file for acado_solver_sfun
 %% 
-%% Simulink version      : 23.2 (R2023b) 01-Aug-2023
-%% TLC file generated on : 02-Dec-2024 15:22:28
+%% Simulink version      : 24.1 (R2024a) 19-Nov-2023
+%% TLC file generated on : 02-Dec-2024 18:09:13
 
 /%
      %%%-MATLAB_Construction_Commands_Start
@@ -21,22 +21,6 @@
 %/
 
 %implements acado_solver_sfun "C"
-
-%% Function: FcnGenerateUniqueFileName ====================================
-%function FcnGenerateUniqueFileName (filename, type) void
-    %assign isReserved = TLC_FALSE
-    %foreach idxFile = CompiledModel.DataObjectUsage.NumFiles[0]
-        %assign thisFile = CompiledModel.DataObjectUsage.File[idxFile]
-        %if (thisFile.Name==filename) && (thisFile.Type==type)
-            %assign isReserved = TLC_TRUE
-            %break
-        %endif
-    %endforeach
-    %if (isReserved==TLC_TRUE)
-        %assign filename = FcnGenerateUniqueFileName(filename + "_", type)
-    %endif
-    %return filename
-%endfunction
 
 %% Function: BlockTypeSetup ===============================================
 %function BlockTypeSetup (block, system) void
@@ -139,7 +123,7 @@
 %function BlockInstanceSetup (block, system) void
     %assign charType = LibGetDataTypeNameFromId(::CompiledModel.tSS_CHAR)
     %if IsModelReferenceSimTarget() || CodeFormat=="S-Function" || ::isRAccel
-        %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", block.Identifier)
+        %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", LibBlockIdentifier(block))
         %assign hFileName = FcnGenerateUniqueFileName("acado_solver_sfun_wrapper_%<sfunInstanceName>", "header")
         %assign hFileNameMacro = FEVAL("upper", hFileName)
         %openfile hFile = "%<hFileName>.h"
@@ -161,7 +145,7 @@
         
         %closefile hFile
         
-        %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", block.Identifier)
+        %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", LibBlockIdentifier(block))
         %assign cFileName = FcnGenerateUniqueFileName("acado_solver_sfun_wrapper_%<sfunInstanceName>", "source")
         %openfile cFile = "%<cFileName>.c"
         %selectfile cFile
@@ -216,7 +200,7 @@
         %% 
         /* %<Type> (%<ParamSettings.FunctionName>): %<Name> */
         {
-            %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", block.Identifier)
+            %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", LibBlockIdentifier(block))
             acado_solver_sfun_wrapper_Start_%<sfunInstanceName>();
         
         }
@@ -236,7 +220,7 @@
         %% 
         /* %<Type> (%<ParamSettings.FunctionName>): %<Name> */
         {
-            %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", block.Identifier)
+            %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", LibBlockIdentifier(block))
             acado_solver_sfun_wrapper_Output_%<sfunInstanceName>(%<u1_ptr>, %<u1BUS_ptr>, %<y1_ptr>, %<y1BUS_ptr>);
         
         }
@@ -254,7 +238,7 @@
         %% 
         /* %<Type> (%<ParamSettings.FunctionName>): %<Name> */
         {
-            %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", block.Identifier)
+            %assign sfunInstanceName = FEVAL("matlab.lang.makeValidName", LibBlockIdentifier(block))
             acado_solver_sfun_wrapper_Terminate_%<sfunInstanceName>();
         
         }

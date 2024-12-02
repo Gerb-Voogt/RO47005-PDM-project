@@ -85,19 +85,18 @@ V_ref = 100/3.6;                % pre-maneuver speed, km/h
 Ts = 0.01;	% controller frequency
 
 %% Bicycle model
-DifferentialState vx yaw Xp vy r delta Yp; % definition of controller states
-Control d_delta T_wheel; % definition of controller input
+DifferentialState vx Xp Yp vy yaw r; % definition of controller states
+Control delta T_wheel; % definition of controller input
 % controller model of the plant
 beta = atan(par.l_r * tan (delta) / par.L);
 
 f_ctrl = [
-    dot(vx) == (T_wheel / par.Reff) / par.mass + vy * r;
-    dot(yaw) == r;...
+    dot(vx)  == (T_wheel * par.Reff) / par.mass + vy * r;...
     dot(Xp)  == vx * cos(yaw) - vy * sin(yaw);...
-    dot(vy) == -((par.Calpha_front + par.Calpha_rear)/(par.mass*vx))*vy + (((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.mass*vx)) - vx)*r + (par.Calpha_front*delta)/par.mass;...
-    dot(r)  == ((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.Izz*vx))*vy - ((par.l_r^2*par.Calpha_rear + par.l_f^2*par.Calpha_front)/(par.Izz*vx))*r + (par.l_f*par.Calpha_front*delta)/par.Izz;...
-    dot(delta)  == d_delta;...
-    dot(Yp)  == vx * sin(yaw) + vy*cos(yaw)];
+    dot(Yp)  == vx * sin(yaw) + vy*cos(yaw);...
+    dot(vy)  == -((par.Calpha_front + par.Calpha_rear)/(par.mass*vx))*vy + (((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.mass*vx)) - vx)*r + (par.Calpha_front*delta)/par.mass;...
+    dot(yaw) == r;...
+    dot(r)   == ((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.Izz*vx))*vy - ((par.l_r^2*par.Calpha_rear + par.l_f^2*par.Calpha_front)/(par.Izz*vx))*r + (par.l_f*par.Calpha_front*delta)/par.Izz]
 
 %% ACADO: controller formulation
 acadoSet('problemname', 'PF_problem');
@@ -143,12 +142,11 @@ d_delta_thd = 800 * pi / 180 / par.i_steer;         % absolute steering rate
 % d_delta_thd = 800 * pi / 180 / par.i_steer; % absolute steering rate
 
 % constraints in ACADO
-ocp.subjectTo(-vx_thd <= vx <= vx_thd);
-ocp.subjectTo(-beta_thd <= vy / vx <= beta_thd);
-ocp.subjectTo(-d_beta_thd <= dot(vy) / vx <= d_beta_thd); 
-ocp.subjectTo(-d_vy_thd <= dot(vy) + vx * r <= d_vy_thd);
-ocp.subjectTo(-delta_thd <= delta <= delta_thd);
-ocp.subjectTo(-d_delta_thd <= d_delta <= d_delta_thd); 
+ocp.subjectTo(0 <= vx <= vx_thd);
+% ocp.subjectTo(-beta_thd <= vy / vx <= beta_thd);
+% ocp.subjectTo(-d_beta_thd <= dot(vy) / vx <= d_beta_thd); 
+% ocp.subjectTo(-d_vy_thd <= dot(vy) + vx * r <= d_vy_thd);
+% ocp.subjectTo(-delta_thd <= delta <= delta_thd);
 % ocp.subjectTo(T_wheel_min <= T_wheel <= T_wheel_max);
 
 % define ACADO prediction model
@@ -189,7 +187,7 @@ end
 
 %% initial MPC Bicycle settings
 disp('Initialization')
-X0       = [V_ref 0 0 0 0 0 0];             % initial state conditions
+X0       = [V_ref 0 0 0 0 0];             % initial state conditions
 % initialize controller bus
 input.x  = repmat(X0, Np + 1, 1).';         % size Np + 1
 input.od = zeros(Np + 1, 1);                % size Np + 1
@@ -204,19 +202,18 @@ input.yN = X0.';                        % terminal reference, size Np + 1
 % input.WN = diag([0 0 0 0]);             % terminal weight tuning
 
 % Higher weight indicates higher importance
-w_vx = 0;        % Weight for longitudinal velocity
+w_vx = 1;        % Weight for longitudinal velocity
 w_yaw = 0;       % Weight for yaw angle
-w_Xp = 0;        % Weight for x-position
+w_Xp = 1;        % Weight for x-position
 w_vy = 0;        % Weight for lateral velocity
 w_r = 0;         % Weight for yaw rate
-w_delta = 0;     % Weight for steering angle
 w_Yp = 1; %1e-1;     % Weight for y-position
 
-w_d_delta = 5e-2; % Weight for rate of change of steering angle
-w_T_wheel = 5e-2; % Weight for wheel torque
+w_delta = 0;     % Weight for steering angle
+w_T_wheel = 0; % Weight for wheel torque
 
 % Define input.W
-input.W  = diag([w_vx, w_yaw, w_Xp, w_vy, w_r, w_delta, w_Yp, w_d_delta, w_T_wheel]);
+input.W  = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta, w_T_wheel]);
 
 % Terminal weights to ensure desired end state
 wN_vx = 0;        % Terminal weight for longitudinal velocity
@@ -228,7 +225,7 @@ wN_delta = 0;     % Terminal weight for steering angle
 wN_Yp = 0;        % Terminal weight for y-position
 
 % Define input.WN
-input.WN = diag([wN_vx, wN_yaw, wN_Xp, wN_vy, wN_r, wN_delta, wN_Yp]);
+input.WN = diag([wN_vx, wN_Xp, wN_Yp, wN_vy, wN_yaw, wN_r]);
 
 disp("Updated weights")
 
