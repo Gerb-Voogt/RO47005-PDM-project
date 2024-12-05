@@ -64,14 +64,14 @@ par.kseta   = 0.6;            % yaw damping
 par.tau     = 0.002;          % yaw delay
 
 % Minimal speed
-par.V0 = 100/3.6;                % initial speed, km/h
+par.V0 = 50/3.6;                % initial speed, km/h
 par.w0 = par.V0 / par.Reff;         % initial wheel angular velocity, rad/s
 
 
 %% Add/ Change after this line
 % Maneuver settings
 % V_ref = 60 /3.6;                % pre-maneuver speed, km/h
-V_ref = 100/3.6;                % pre-maneuver speed, km/h
+V_ref = 50/3.6;                % pre-maneuver speed, km/h
 
 
 % Dr. Barys Shyrokau
@@ -201,14 +201,14 @@ input.yN = X0.';                        % terminal reference, size Np + 1
 % input.WN = diag([0 0 0 0]);             % terminal weight tuning
 
 % Higher weight indicates higher importance
-w_vx = 5e-1;        % Weight for longitudinal velocity
+w_vx = 5e0;        % Weight for longitudinal velocity
 w_yaw = 0;       % Weight for yaw angle
-w_Xp = 1e-1;        % Weight for x-position
+w_Xp = 1e0;        % Weight for x-position
 w_vy = 0;        % Weight for lateral velocity
 w_r = 0;         % Weight for yaw rate
-w_Yp = 1e-2;     % Weight for y-position
+w_Yp = 1e0;     % Weight for y-position
 
-w_delta = 0;     % Weight for steering angle
+w_delta = 5e0;     % Weight for steering angle
 w_T_wheel = 0; % Weight for wheel torque
 
 % Define input.W

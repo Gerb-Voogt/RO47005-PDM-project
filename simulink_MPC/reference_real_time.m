@@ -14,7 +14,7 @@ function [v_ref, x_ref, y_ref] = reference_real_time(V_ref,t)
     R = V_ref^2 / a_y_comf;         % Turn radius (m)
     delta_theta = pi/2;        % 90 degrees in radians
     L_turn = R * delta_theta;  % Arc length for the turn (m)
-    L_straight = 500;          % Length of the straight segment before the turn (m)
+    L_straight = 50;          % Length of the straight segment before the turn (m)
     
     %% Time Calculations
     t_straight = L_straight / V_ref;   % Time to traverse the straight segment (s)
@@ -40,9 +40,8 @@ function [v_ref, x_ref, y_ref] = reference_real_time(V_ref,t)
         x_ref = L_straight + R * sin(theta);
         y_ref = R * (1 - cos(theta));
     else
-        % After maneuver: maintain final position
-        x_ref = L_straight + R * sin(delta_theta);
-        y_ref = R * (1 - cos(delta_theta));
+        x_ref = L_straight;
+        y_ref = V_ref * t;
     end
     
     % Reference speed remains constant
