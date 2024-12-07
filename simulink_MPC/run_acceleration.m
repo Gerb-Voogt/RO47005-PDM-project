@@ -5,7 +5,7 @@
 % only with the permission of the course coordinator
 
 clc; clear all; close all; clear mex;
-
+addpath(genpath('..'));
 
 % General
 par.g = 9.81;
