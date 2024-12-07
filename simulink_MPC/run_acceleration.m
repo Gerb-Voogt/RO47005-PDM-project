@@ -71,7 +71,7 @@ par.w0 = par.V0 / par.Reff;         % initial wheel angular velocity, rad/s
 %% Add/ Change after this line
 % Maneuver settings
 % V_ref = 60 /3.6;                % pre-maneuver speed, km/h
-V_ref = 50/3.6;                % pre-maneuver speed, km/h
+V_ref = 60/3.6;                % pre-maneuver speed, km/h
 
 
 % Dr. Barys Shyrokau
