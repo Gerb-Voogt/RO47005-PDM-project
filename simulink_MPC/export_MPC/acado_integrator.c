@@ -271,6 +271,9 @@ real_t det;
 acadoWorkspace.rk_ttt = 0.0000000000000000e+00;
 acadoWorkspace.rk_xxx[6] = rk_eta[54];
 acadoWorkspace.rk_xxx[7] = rk_eta[55];
+acadoWorkspace.rk_xxx[8] = rk_eta[56];
+acadoWorkspace.rk_xxx[9] = rk_eta[57];
+acadoWorkspace.rk_xxx[10] = rk_eta[58];
 
 for (run = 0; run < 3; ++run)
 {

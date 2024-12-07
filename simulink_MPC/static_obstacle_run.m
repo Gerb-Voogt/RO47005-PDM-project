@@ -86,6 +86,8 @@ Ts = 0.01;	% controller frequency
 %% Bicycle model
 DifferentialState vx Xp Yp vy yaw r; % definition of controller states
 Control delta T_wheel; % definition of controller input
+OnlineData Xo Yo Rs; % Online data: obstacle X, Y, and R_safe
+
 % controller model of the plant
 beta = atan(par.l_r * tan (delta) / par.L);
 
@@ -95,7 +97,7 @@ f_ctrl = [
     dot(Yp)  == vx * sin(yaw) + vy*cos(yaw);...
     dot(vy)  == -((par.Calpha_front + par.Calpha_rear)/(par.mass*vx))*vy + (((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.mass*vx)) - vx)*r + (par.Calpha_front*delta)/par.mass;...
     dot(yaw) == r;...
-    dot(r)   == ((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.Izz*vx))*vy - ((par.l_r^2*par.Calpha_rear + par.l_f^2*par.Calpha_front)/(par.Izz*vx))*r + (par.l_f*par.Calpha_front*delta)/par.Izz]
+    dot(r)   == ((par.l_r*par.Calpha_rear - par.l_f*par.Calpha_front)/(par.Izz*vx))*vy - ((par.l_r^2*par.Calpha_rear + par.l_f^2*par.Calpha_front)/(par.Izz*vx))*r + (par.l_f*par.Calpha_front*delta)/par.Izz];
 
 %% ACADO: controller formulation
 acadoSet('problemname', 'PF_problem');
@@ -132,8 +134,8 @@ d_beta_thd  = 25 * pi / 180;                        % absolute sideslip angle ra
 d_vy_thd    = 0.85 * mu * g;                        % absolute lateral acceleration
 delta_thd   = 2.67 * 360 / 180 * pi / par.i_steer;  % absolute steering position
 d_delta_thd = 800 * pi / 180 / par.i_steer;         % absolute steering rate
-% T_wheel_max = ...; % Define based on vehicle specifications (e.g., engine limits)
-% T_wheel_min = ...; % Define minimum torque (could be negative for braking)
+T_wheel_max = 500;                                  % 
+T_wheel_min = -200;                                 % minimum torque 
 
 
 % beta_thd    = 10 / 180 * pi;                % absolute sideslip 
@@ -142,11 +144,14 @@ d_delta_thd = 800 * pi / 180 / par.i_steer;         % absolute steering rate
 
 % constraints in ACADO
 ocp.subjectTo(0 <= vx <= vx_thd);
-% ocp.subjectTo(-beta_thd <= vy / vx <= beta_thd);
-% ocp.subjectTo(-d_beta_thd <= dot(vy) / vx <= d_beta_thd); 
-% ocp.subjectTo(-d_vy_thd <= dot(vy) + vx * r <= d_vy_thd);
-% ocp.subjectTo(-delta_thd <= delta <= delta_thd);
-% ocp.subjectTo(T_wheel_min <= T_wheel <= T_wheel_max);
+ocp.subjectTo(-beta_thd <= vy / vx <= beta_thd);
+ocp.subjectTo(-d_beta_thd <= dot(vy) / vx <= d_beta_thd); 
+ocp.subjectTo(-d_vy_thd <= dot(vy) + vx * r <= d_vy_thd);
+ocp.subjectTo(-delta_thd <= delta <= delta_thd);
+ocp.subjectTo(T_wheel_min <= T_wheel <= T_wheel_max);
+
+% obstacle constraints
+ocp.subjectTo( sqrt((Xp-Xo)*(Xp-Xo) + (Yp - Yo)*(Yp - Yo)) - Rs >= 0);
 
 % define ACADO prediction model
 ocp.setModel(f_ctrl);
@@ -183,17 +188,25 @@ if COMPILE
     cd ..
 end
 
+%% Obstacle parameters
+X_obj = 20;      % Obstacle x-position
+Y_obj = 2;       % Obstacle y-position
+R_obj = 2;       % Obstacle radius
+R_safe = R_obj + 1; % Safety margin around the obstacle
+
+obs = [X_obj; Y_obj; R_safe];
+obs_array = repmat(obs,41,1)';
 
 %% initial MPC Bicycle settings
 disp('Initialization')
-X0       = [V_ref 0 0 0 0 0];             % initial state conditions
+X0       = [V_ref 0 0 0 0 0];               % initial state conditions
 % initialize controller bus
 input.x  = repmat(X0, Np + 1, 1).';         % size Np + 1
-input.od = zeros(Np + 1, 1);                % size Np + 1
+input.od = obs_array;                       % size Np + 1
 Uref     = zeros(Np, 2);
 input.u  = Uref.';
 input.y  = [repmat(X0, Np, 1) Uref].';   % reference trajectory, size Np + 1
-input.yN = X0.';                        % terminal reference, size Np + 1
+input.yN = X0.';                         % terminal reference, size Np + 1
 
 %% Weights for state and control variables
 % % redefined in Simulink
@@ -201,15 +214,15 @@ input.yN = X0.';                        % terminal reference, size Np + 1
 % input.WN = diag([0 0 0 0]);             % terminal weight tuning
 
 % Higher weight indicates higher importance
-w_vx = 5e0;        % Weight for longitudinal velocity
+w_vx = 5e0;      % Weight for longitudinal velocity
 w_yaw = 0;       % Weight for yaw angle
-w_Xp = 1e0;        % Weight for x-position
+w_Xp = 1e1;      % Weight for x-position
 w_vy = 0;        % Weight for lateral velocity
 w_r = 0;         % Weight for yaw rate
-w_Yp = 1e0;     % Weight for y-position
+w_Yp = 1e0;      % Weight for y-position
 
-w_delta = 5e0;     % Weight for steering angle
-w_T_wheel = 0; % Weight for wheel torque
+w_delta = 5e0;       % Weight for steering angle
+w_T_wheel = 1e0;     % Weight for wheel torque
 
 % Define input.W
 input.W  = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta, w_T_wheel]);
@@ -233,8 +246,11 @@ input.x0 = X0.';
 % controller bus initialization
 init.x   = input.x(:).';                  % state trajectory
 init.u   = input.u(:).';                  % control trajectory
+init.od  = input.od(:).';                 % obstacle parameters
 init.y   = input.y(:).';                  % reference trajectory (up to Np - 1)
 init.yN  = input.yN(:).';                 % terminal reference value (only for Np)
 init.W   = input.W(:).';                  % stage cost matrix (up to Np - 1)
 init.WN  = input.WN(:).';                 % terminal cost matrix (only for Np)
 init.x0  = input.x0(:).';                 % initial state value
+
+
