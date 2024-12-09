@@ -13,7 +13,6 @@ function [v_ref, x_ref, y_ref] = reference_real_time(V_ref, t)
     % The vehicle moves along the x-axis at constant speed:
     x_ref = V_ref * t; 
     y_ref = 0;
-
     % The reference speed remains constant:
     v_ref = V_ref;
 
