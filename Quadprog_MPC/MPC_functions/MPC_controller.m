@@ -1,0 +1,67 @@
+% Setup dimensions from system
+A_MPC = sysd.A;
+B_MPC = sysd.B;
+C_MPC = sysd.C;
+
+dim.N = N_horizon;
+dim.nx = size(A_MPC,1);
+dim.nu = size(B_MPC,2);
+dim.ny = size(C_MPC,1);
+
+Co = ctrb(A_MPC, B_MPC);
+rank_Co = rank(Co);
+disp(['Controllability Matrix Rank: ', num2str(rank_Co)]);
+if rank_Co < dim.nx
+    disp('Warning: The system is NOT fully controllable.');
+else
+    disp('The system is fully controllable.');
+end
+
+% Augment system for rate of change penalty
+[A_MPC,B_MPC,C_MPC,Q_MPC,R_MPC,M_MPC,P_MPC,x0] = rate_change_pen(A_MPC,B_MPC,Q_MPC,R_MPC,L_MPC,x0);
+
+% Generate prediction matrices
+[T,S] = predmodgen(A_MPC, B_MPC, C_MPC, dim);
+
+% Generate cost function
+[left,right] = costgen(T,S,Q_MPC,R_MPC,dim,x0,P_MPC,M_MPC);
+
+% Example constraints (can be adjusted as needed)
+A_MPC_con = kron([1;-1],eye(dim.N));
+b_MPC_con = repmat([1;1],dim.N,1);
+
+
+function [T,S]=predmodgen(A_MPC, B_MPC, C_MPC, dim)
+    % Prediction matrices generation
+
+    T=zeros(dim.ny*(dim.N+1),dim.nx);
+    for k=0:dim.N
+        Pslice = C_MPC*A_MPC^k;
+        T(k*dim.ny+1:(k+1)*dim.ny,:)=Pslice;
+    end
+
+    S=zeros(dim.ny*(dim.N+1),dim.nu*(dim.N));
+    for k=1:dim.N
+        for i=0:k-1
+            Sslice = C_MPC*A_MPC^(k-1-i)*B_MPC;
+            S(k*dim.ny+1:(k+1)*dim.ny,i*dim.nu+1:(i+1)*dim.nu)= Sslice;
+        end
+    end
+end
+
+function [H,h]=costgen(T,S,Q,R,dim,x0,P,M)
+    % Cost function generation
+    % V_N(x0,u) = 0.5*sum_{k=0}^{N-1} (x_k'Qx_k + u_k'Ru_k + 2x_k'Mu_k) + 0.5x_N'Px_N
+
+    if nargin < 8
+        M = zeros(dim.nx,dim.nu);
+        P = Q;
+    end
+
+    Qbar = blkdiag(kron(eye(dim.N),Q),P);
+    Rbar = kron(eye(dim.N),R);
+    Mbar = [kron(eye(dim.N),M);zeros(dim.nx,dim.N*dim.nu)];
+
+    H = Rbar + S'*Qbar*S + 2*S'*Mbar;
+    h = S'*Qbar*T*x0 + Mbar'*T*x0;
+end
