@@ -10,7 +10,7 @@ Ts = 0.01;
 
 % Reference speed
 V_ref = 50/3.6;
-linearization_point = [0;0;0;0;0];
+linearization_point = [0;0;0;0];
 
 % Generate state space model
 generate_state_space
@@ -21,6 +21,8 @@ N_horizon = 15;           % Prediction horizon
 Q_MPC = eye(size(sysd.A,1)); % State weighting
 R_MPC = 1;                   % Control input weighting
 L_MPC = 0;                   % Rate of change weighting
+
+ff = zeros(N_horizon,1);
 
 x0 = linearization_point;
 

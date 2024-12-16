@@ -16,4 +16,4 @@ B2 = [0; (-par.Calpha_front*par.l_f+par.Calpha_rear*par.l_r)/(par.mass*vx)-vx; 0
 B = [B1, B2];
 
 sysc = ss(A,B,eye(size(A,1)),[]);
-sysd = c2d(sysc,Ts);
+sysd = c2d(sysc,Ts)

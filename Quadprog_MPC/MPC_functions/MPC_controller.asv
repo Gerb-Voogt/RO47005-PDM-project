@@ -65,5 +65,8 @@ function [H,h]=costgen(T,S1,S2,Q,R,dim,x0,P,M,ff)
     Mbar = [kron(eye(dim.N),M);zeros(dim.nx,dim.N*dim.nu)];
 
     H = Rbar + S1'*Qbar*S1 + 2*S1'*Mbar;
-    h = S1'*Qbar*T*x0 + Mbar'*T*x0+S1'*Qbar*S2*ff+Mbar'*S2*ff;
+    size(S1'*Qbar*T*x0)
+    size(Mbar'*S2*ff)
+    size()
+    h = S1'*Qbar*T*x0 + Mbar'*T*x0+S1'*Q*S2*ff+Mbar'*S2*ff;
 end
