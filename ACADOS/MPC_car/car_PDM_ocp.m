@@ -29,7 +29,7 @@ par.w0 = par.V0 / par.Reff;
 %% Horizon and sampling
 Ts = 0.01;
 N = 20; %20    % prediction horizon
-T = N*Ts;  % horizon length
+T = N*Ts;      % horizon length
 V0 = par.V0;
 
 %% Create Model
