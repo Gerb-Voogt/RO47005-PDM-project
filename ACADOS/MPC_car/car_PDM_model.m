@@ -1,4 +1,4 @@
-function model = MPC_model(par)
+function model= car_PDM_model(par)
     
     import casadi.*
 
@@ -32,7 +32,7 @@ function model = MPC_model(par)
     d_delta = SX.sym('d_delta');
     u = d_delta;
 
-    % Equations of motion (from ACADO code)
+    % Equations of motion
     dvx = vy * r;
     dXp = vx*cos(yaw) - vy*sin(yaw);
     dYp = vx*sin(yaw) + vy*cos(yaw);
@@ -54,6 +54,6 @@ function model = MPC_model(par)
     model.xdot = xdot;
     model.f_expl_expr = f_expl;
     model.f_impl_expr = f_expl - xdot;
-    model.name = 'MPC_model';
+    model.name = 'car_PDM';
 
 end

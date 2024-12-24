@@ -27,7 +27,7 @@ ocp = AcadosOcp();
 sim = AcadosSim();
 
 %% Create Model
-model = MPC_model(par);
+[model, constraint] = car_PDM_model(par);
 ocp.model = model;
 sim.model = model;
 
@@ -83,8 +83,8 @@ ocp.cost.cost_type = 'NONLINEAR_LS';
 ocp.cost.cost_type_e = 'NONLINEAR_LS';
 
 w_vx = 1e-2;      
-w_Xp = 1e2;    
-w_Yp = 1e2;    
+w_Xp = 1e0;    
+w_Yp = 1e0;    
 w_vy = 1e-2;      
 w_yaw = 1e-2;     
 w_r = 1e-2;       
@@ -128,10 +128,16 @@ ocp.constraints.lbx = [0 -delta_thd];
 ocp.constraints.ubx =  [vx_thd delta_thd];
 
 % Bounds on d_delta (input)
-% ocp.constraints.idxbu = [0]; % only one input: d_delta
-% ocp.constraints.lbu = -d_delta_thd;
-% ocp.constraints.ubu =  d_delta_thd;
+ocp.constraints.idxbu = 0; % only one input: d_delta
+ocp.constraints.lbu = -d_delta_thd;
+ocp.constraints.ubu =  d_delta_thd;
 
+% % Assign the nonlinear constraint expression to the ocp model:
+% ocp.model.con_h_expr = constraint;
+% 
+% % Set lower and upper bounds for h_expr, TODO: set uh to inf
+% ocp.constraints.lh = 0;        % h_expr_obs must be >= 0
+% ocp.constraints.uh = 1e9;      % a sufficiently large upper bound
 
 % ocp.subjectTo(0 <= vx <= vx_thd);
 % ocp.subjectTo(-delta_thd <= delta <= delta_thd);
