@@ -7,7 +7,7 @@ import casadi.*
 nx = 5;
 nu = 2;
 ny = nu+nx; % number of outputs in lagrange term
-ny_e = nx;  % number of outputs in mayer term
+ny_e = nx; % number of outputs in mayer term
 
 %% discretization
 N = 500;     % Prediction Horizon
@@ -15,11 +15,11 @@ Ts = .25;    % sampling time [s]
 T = N*Ts;    % time horizon length
 L = 2.57;    % [m] vehicle wheelbase 
 
-%% named symbolic variables 
+%% named symbolic variables
 x = SX.sym('x');         % x cartesian position  [m]
 y = SX.sym('y');         % y cartesian position  [m]
-psi = SX.sym('psi');     % hading angle          [rad]
-v = SX.sym('v');         % vehicle speed         [m/s]
+psi = SX.sym('psi');     % hading angle         [rad]
+v = SX.sym('v');         % vehicle speed        [m/s]
 a = SX.sym('a');         % vehicle acceleration        [m/s]
 delta = SX.sym('delta');        % steer wheel angle    [rad]
 d_delta = SX.sym('d_delta');    % steer wheel speed    [rad/s]
@@ -31,11 +31,11 @@ sym_u = vertcat(a,d_delta);
 
 %% dynamics
 expr_phi = vertcat(...
-            v*cos(psi),...
-            v*sin(psi),...
-            v/L*tan(Ts*delta),...
-            a,...
-            d_delta);
+            x + Ts*v*cos(psi),...
+            y + Ts*v*sin(psi),...
+            psi + Ts*v/L*tan(Ts*delta),...
+            v + Ts*a,...
+            delta + Ts*d_delta);
 
 %% cost
 cost_t   = 'ext_cost';
@@ -80,9 +80,6 @@ lh=[...
     0;...
     0;...
 ];
-
-h = (x-70)^2+(y-55)^2-5^2;
-lh = 0;
 uh=10000*ones(size(h,1),1);
 
 h_e  = h;
@@ -207,7 +204,6 @@ xi=[...
     x0(4) zeros(1,N);...
     x0(5) zeros(1,N);...
    ];
-
 ocp.set('init_x', xi);
 
 ocp.solve();
