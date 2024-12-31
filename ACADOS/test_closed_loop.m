@@ -27,8 +27,8 @@ par.V0 = 50/3.6;
 par.w0 = par.V0 / par.Reff;     
 
 %% Horizon and sampling
-Ts = 0.01;
-N = 200; %20    % prediction horizon
+Ts = 0.1;
+N = 50; %20    % prediction horizon
 T = N*Ts;  % horizon length
 V0 = par.V0;
 
@@ -47,14 +47,14 @@ ocp.model = model;
 
 %% Cost 
 % Weights
-w_vx = 1e-2;      
-w_Xp = 1e0;    
-w_Yp = 1e3;    
-w_vy = 1e-2;      
-w_yaw = 1e-2;     
-w_r = 1e-2;       
-w_delta = 1e2; 
-w_d_delta = 5e0;  
+w_vx = 0e-2;      
+w_Xp = 1e-2;    
+w_Yp = 1e-2;    
+w_vy = 0e-2;      
+w_yaw = 1e0;     
+w_r = 0e-2;       
+w_delta = 1e-1; 
+w_d_delta = 5e1;  
 
 W_x  = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
 W_u  = w_d_delta;
@@ -68,19 +68,19 @@ ocp.cost.W_0 = W_u;
 ocp.cost.yref_0 = zeros(ny_0, 1);
 ocp.model.cost_y_expr_0 = model.u;
 
-% % path cost term
-% ny = nx + nu;
-% ocp.cost.cost_type = 'NONLINEAR_LS';
-% ocp.cost.W = blkdiag(W_x, W_u);
-% ocp.cost.yref = [par.V0;zeros(nx,1)]; %[par.V0; Xp_ref_terminal*0.5; Xp_ref_terminal*0.5; 0; 0; 0; 0; 0]; % [vx; Xp; Yp; vy; yaw; r; delta]
-% ocp.model.cost_y_expr = vertcat(model.x, model.u); 
-
 % path cost term
-ny = nu;
+ny = nx + nu;
 ocp.cost.cost_type = 'NONLINEAR_LS';
-ocp.cost.W = W_u;
-ocp.cost.yref = zeros(ny_0, 1); %[par.V0; Xp_ref_terminal*0.5; Xp_ref_terminal*0.5; 0; 0; 0; 0; 0]; % [vx; Xp; Yp; vy; yaw; r; delta]
-ocp.model.cost_y_expr = model.u; 
+ocp.cost.W = blkdiag(W_x, W_u);
+ocp.cost.yref = [par.V0; Xp_ref_terminal; 0; 0; 0; 0; 0 ;0]; %[par.V0;zeros(nx,1)]; %[par.V0; Xp_ref_terminal*0.5; Xp_ref_terminal*0.5; 0; 0; 0; 0; 0]; % [vx; Xp; Yp; vy; yaw; r; delta]
+ocp.model.cost_y_expr = vertcat(model.x, model.u); 
+
+% % path cost term
+% ny = nu;
+% ocp.cost.cost_type = 'NONLINEAR_LS';
+% ocp.cost.W = W_u;
+% ocp.cost.yref = zeros(ny_0, 1); %[par.V0; Xp_ref_terminal*0.5; Xp_ref_terminal*0.5; 0; 0; 0; 0; 0]; % [vx; Xp; Yp; vy; yaw; r; delta]
+% ocp.model.cost_y_expr = model.u; 
 
 % terminal cost term
 ny_e = nx;
@@ -88,6 +88,7 @@ ocp.cost.cost_type_e = 'NONLINEAR_LS';
 ocp.model.cost_y_expr_e = model.x;
 ocp.cost.yref_e = [par.V0; Xp_ref_terminal; 0; 0; 0; 0; 0]; % [vx; Xp; Yp; vy; yaw; r; delta]
 ocp.cost.W_e = W_x;
+
 
 %% Define constraints
 mu = 1;
@@ -107,7 +108,6 @@ d_delta_thd = 800 * pi/180/par.i_steer;       % max steering rate
 % ocp.constraints.uh = [ beta_thd;  d_beta_thd;  d_vy_thd];
 % 
 
-
 % Bounds on delta (state)
 % delta is state #7 (index_delta = 6)
 % ocp.constraints.idxbx = [0 1 6];
@@ -126,10 +126,10 @@ ocp.constraints.idxbu = 0; % only one input: d_delta
 ocp.constraints.lbu = -d_delta_thd;
 ocp.constraints.ubu =  d_delta_thd;
 
-
-Xobs = 20;%114;    % Obstacle's X-position
-Yobs = 3;%120;     % Obstacle's Y-position
-R = 5;        % Minimum radius from the obstacle
+% 
+% Xobs = 20;%114;    % Obstacle's X-position
+% Yobs = 10;%120;     % Obstacle's Y-position
+% R = 5;        % Minimum radius from the obstacle
 
 % h = [...
 %     (model.x(2)-10)^2+(model.x(3)-4)^2-R^2;...
@@ -158,13 +158,30 @@ h = [...
 ocp.model.con_h_expr = h;
 ocp.model.con_h_expr_0 = h;
 
-% Set lower and upper bounds for h_expr, TODO: set uh to inf
-ocp.constraints.lh = 0;        % h_expr_obs must be >= 0
-ocp.constraints.uh = 1e9;      % a sufficiently large upper bound
+% Set lower and upper bounds for h_expr
+infty = get_acados_infty();
+ocp.constraints.lh = 0;          % h_expr_obs must be >= 0
+ocp.constraints.uh = infty;      % a sufficiently large upper bound
 ocp.constraints.lh_0 = 0;        % h_expr_obs must be >= 0
-ocp.constraints.uh_0 = 1e9;      % a sufficiently large upper bound
+ocp.constraints.uh_0 = infty;    % a sufficiently large upper bound
 
+% Slack variables (soft constraints)
+ocp.constraints.idxsh = 0;
+ocp.constraints.idxsh_0 = 0;
+% ocp.constraints.ns = 1;
 
+ns = nu;
+slack_penalty = infty;%1e9;
+
+ocp.cost.Zl_0 = slack_penalty*ones(ns,1);
+ocp.cost.Zu_0 = slack_penalty*ones(ns,1);
+ocp.cost.zl_0 = 0*slack_penalty*ones(ns,1);
+ocp.cost.zu_0 = 0*slack_penalty*ones(ns,1);
+
+ocp.cost.Zl = slack_penalty*ones(ns,1);
+ocp.cost.Zu = slack_penalty*ones(ns,1);
+ocp.cost.zl = 0*slack_penalty*ones(ns,1);
+ocp.cost.zu = 0*slack_penalty*ones(ns,1);
 
 ocp.constraints.x0 = x0;
 
@@ -183,7 +200,7 @@ ocp.solver_options.globalization = 'MERIT_BACKTRACKING';
 % ocp.solver_options.qp_solver_iter_max = 100
 ocp.simulink_opts = simulink_opts;
 
-ocp.solver_options.regularize_method = 'PROJECT_REDUC_HESS';
+ocp.solver_options.regularize_method = 'PROJECT';
 ocp.solver_options.nlp_solver_max_iter = 500;
 ocp.solver_options.nlp_solver_tol_stat = 1e-2;
 ocp.solver_options.nlp_solver_tol_eq = 1e-2;
@@ -201,6 +218,8 @@ u_traj_init = zeros(nu, N);
 ocp_solver.set('constr_x0', x0);
 
 t = Ts*(0:N);
+
+% [~, x_init, y_init] = reference_corner(par.V0, t); 
 
 [~, x_init, y_init] = reference_real_time(par.V0, t);
 
@@ -256,7 +275,6 @@ grid on
 
 %% Closed-loop simulation
 t_final = 10; % seconds
-Ts = 0.1;
 N_sim = t_final/Ts; % timeseps
 
 par_sim = par;
@@ -266,9 +284,9 @@ par_sim = par;
 % control model
 % par_sim.g = 9.81;          
 % par_sim.Reff     = 0.3035;              
-% par_sim.mass     = 1380;                
+% par_sim.mass     = 1500;                
 % par_sim.Izz      = 2634.5;              
-% par_sim.L        = 2.79;                
+% par_sim.L        = 3.5;                
 % par_sim.l_f      = 1.384;               
 % par_sim.i_steer  = 15.4;                
 % par_sim.l_r      = par.L - par.l_f;                   
@@ -278,7 +296,8 @@ par_sim = par;
 % par_sim.V0 = 50/3.6;               
 % par_sim.w0 = par.V0 / par.Reff; 
 
-model_sim = car_PDM_model(par_sim);
+% model_sim = car_PDM_model(par_sim);
+model_sim = sim_car(par_sim);
 
 sim = AcadosSim();
 sim.model = model_sim;
@@ -296,8 +315,8 @@ x_sim(:,1) = x0;
 
 t_N = [0 Ts*(1:N)];
 
-% yref = zeros(ny, 1);
-yref_e = zeros(nx, 1);
+yref = [par.V0;zeros(ny-1, 1)];
+yref_e = [par.V0;zeros(ny_e-1, 1)];
 
 for i = 1:N_sim
 
@@ -307,20 +326,25 @@ for i = 1:N_sim
     x0 = x_sim(:,i);
     ocp_solver.set('constr_x0', x0);
 
+    % [~, x_ref, y_ref] = reference_corner(par.V0, t); 
     [~, x_ref, y_ref] = reference_real_time(par.V0, t);
-    % 
-    % for k=1:N-1 % intermediate stages
-    %     % yref(2) = x_ref(k);
-    %     % yref(3) = y_ref(k);
-    %     % 
-    %     % ocp_solver.set('cost_y_ref', yref, k); % last argument is the stage
-    % end
-    % 
-    % yref_e(2) = x_ref(k+1); % terminal stage
-    % % yref_e(3) = y_ref(k+1); % terminal stage
-    % ocp_solver.set('cost_y_ref_e', yref_e, N);
+
+    if length(y_ref) == 1
+        y_ref = repmat(y_ref,1,N+1);
+    end
+
+    for k=1:N-1 % intermediate stages
+        yref(2) = x_ref(k);
+        yref(3) = y_ref(k);
+        ocp_solver.set('cost_y_ref', yref, k); % last argument is the stage
+    end
+
+    yref_e(2) = x_ref(k+1); % terminal stage
+    % yref_e(3) = y_ref(k+1); % terminal stage
+    ocp_solver.set('cost_y_ref_e', yref_e, N);
 
     % ocp.cost.yref_e = [par.V0; x_ref(N+1); 0; 0; 0; 0; 0]; 
+
     % if i > 1
     %     x_traj_init = ocp_solver.get('x');
     %     u_traj_init = ocp_solver.get('u');
@@ -335,7 +359,7 @@ for i = 1:N_sim
     status = ocp_solver.get('status'); % 0 - success
 
     if status ~= 0
-        warning('acados OCP solver returned status %d, not successful!', status);
+        warning('acados OCP solver returned status %d, not successful, at time %d', status, t(1));
         ocp_solver.print('stat');
     end
 
@@ -353,36 +377,41 @@ for i = 1:N_sim
     x_sim(:,i+1) = sim_solver.get('xn');
     u_sim(:,i) = u0;
 
-    if i*Ts < 1.5 && i*Ts > 1
-
-        % get solution
-        utraj = ocp_solver.get('u');
-        xtraj = ocp_solver.get('x');
-
-        ts = linspace(i*Ts, T+i*Ts, N+1);
-        figure; hold on;
-        states = {'vx', 'Xp', 'Yp', 'vy','yaw','r','delta'};
-        for j=1:4
-            subplot(4, 1, j);
-            plot(ts, xtraj(j,:)); grid on;
-            ylabel(states{j});
-            xlabel('t [s]')
-        end
-
-        figure; hold on;
-        for j=1:3
-            subplot(3, 1, j);
-            plot(ts, xtraj(j+4,:)); grid on;
-            ylabel(states{j+4});
-            xlabel('t [s]')
-        end
-
-        figure
-        stairs(ts, [utraj'; utraj(end)])
-        ylabel('d-{\delta}')
-        xlabel('t [s]')
-        grid on
-    end
+    % if i*Ts < 1.8 && i*Ts > 1.4
+    % 
+    %     % get solution
+    %     utraj = ocp_solver.get('u');
+    %     xtraj = ocp_solver.get('x');
+    % 
+    %     ts = linspace(i*Ts, T+i*Ts, N+1);
+    %     figure; hold on;
+    %     states = {'vx', 'Xp', 'Yp', 'vy','yaw','r','delta'};
+    % 
+    %     for j=1:4
+    %         subplot(4, 1, j);
+    %         plot(ts, xtraj(j,:)); grid on;
+    %         ylabel(states{j});
+    %         xlabel('t [s]')
+    %     end
+    %     sgtitle(sprintf("At timestep %.2f", i*Ts)); 
+    % 
+    %     figure; hold on;
+    % 
+    %     for j=1:3
+    %         subplot(3, 1, j);
+    %         plot(ts, xtraj(j+4,:)); grid on;
+    %         ylabel(states{j+4});
+    %         xlabel('t [s]')
+    %     end
+    %     sgtitle(sprintf("At timestep %.2f", i*Ts)); % Add a super title
+    % 
+    %     figure
+    %     sgtitle(sprintf("At timestep %.2f", i*Ts)); % Add a super title
+    %     stairs(ts, [utraj'; utraj(end)])
+    %     ylabel('d-{\delta}')
+    %     xlabel('t [s]')
+    %     grid on
+    % end
 end
 
 %% plots
@@ -392,8 +421,9 @@ states = {'vx', 'Xp', 'Yp', 'vy','yaw','r','delta'};
 
 y_ref = zeros(nx, N_sim+1);
 y_ref(1, :) = par.V0;
-[~, y_ref(2,:), ~] = reference_real_time(par.V0,t_sim); %:Xp_ref(1:N_sim);
-y_ref(3, 2:end) = zeros(1,N_sim);
+% [~, y_ref(2,:), y_ref(3,:)] = reference_corner(par.V0,t_sim);
+[~, y_ref(2,:), y_ref(3,:)] = reference_real_time(par.V0,t_sim); 
+% y_ref(3, 2:end) = zeros(1,N_sim);
 
 for i=1:4
     subplot(4, 1, i);
