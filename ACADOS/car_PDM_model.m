@@ -1,6 +1,7 @@
 function model= car_PDM_model(par)
     
     import casadi.*
+    veh_parameters
 
     % Parameters from par
     mass = par.mass;
