@@ -7,12 +7,6 @@ import casadi.*
 % Check requirements for acados
 check_acados_requirements()
 
-% Simulink options for acados (if needed)
-if ~exist('simulink_opts', 'var')
-    disp('using acados simulink default options')
-    simulink_opts = get_acados_simulink_opts;
-end
-
 % Load vehicle parameters
 veh_parameters
 
@@ -31,7 +25,7 @@ nu    = length(model.u);
 % Initial condition for MPC states: [vx, Xp, Yp, vy, yaw, r, delta]
 x0 = [par.V0; 0; 0; 0; 0; 0; 0];
 
-% Advanced model states: [X, Y, PSI, THETA, V, ALPHAT, dPSI, dTHETA]
+% OpenVD model states: [X, Y, PSI, THETA, V, ALPHAT, dPSI, dTHETA]
 x_adv0 = [0; 0; 0; 0; par.V0; 0; 0; 0];
 
 %% ========================================================================
@@ -41,17 +35,19 @@ ocp = AcadosOcp();
 ocp.model = model;
 
 % Cost Weights
-w_vx     = 0e-2;
+w_vx     = 1e2;
 w_Xp     = 1e0;
 w_Yp     = 1e0;
 w_vy     = 0e-2;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
 w_delta  = 0e1;
-w_d_delta= 5e1;
+
+w_d_delta= 1e0;
+w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
-W_u = w_d_delta;
+W_u = diag([w_d_delta,w_Fx]);
 
 % Cost function setup
 ny      = nx + nu;
@@ -74,7 +70,7 @@ Xp_ref_terminal = par.V0 * Ts * N;
 ocp.cost.cost_type_e      = 'NONLINEAR_LS';
 ocp.model.cost_y_expr_e   = model.x;
 ocp.cost.yref_e           = [par.V0; Xp_ref_terminal; 0; 0; 0; 0; 0];
-ocp.cost.W_e              = 3 * W_x;
+ocp.cost.W_e              = 5 * W_x;
 
 % Constraints
 vx_thd      = 170 / 3.6;             % max vx [m/s]
@@ -101,22 +97,21 @@ R    = 5;     % Min radius from obstacle
 
 h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
 
-% Combine them if more constraints are added
+% Nonlinear constraints: h >= 0
 h = [h_obs];
 ocp.model.con_h_expr   = h;
 ocp.model.con_h_expr_0 = h;
 
-% Nonlinear constraints: h >= 0
 Inf_val = get_acados_infty();
 ocp.constraints.lh    = 0;
 ocp.constraints.uh    = Inf_val;
 ocp.constraints.lh_0  = 0;
 ocp.constraints.uh_0  = Inf_val;
 
-% Slack variables (soft constraints) example
+% Slack variables (soft constraints)
 ocp.constraints.idxsh    = 0;
 ocp.constraints.idxsh_0  = 0;
-ns                       = nu;
+ns                       = 1;
 slack_penalty            = 1e9;
 
 ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
@@ -143,7 +138,6 @@ ocp.solver_options.qp_solver_cond_N   = 5;
 ocp.solver_options.hessian_approx     = 'GAUSS_NEWTON';
 ocp.solver_options.ext_fun_compile_flags = '-O2';
 ocp.solver_options.globalization      = 'MERIT_BACKTRACKING';
-ocp.simulink_opts                     = simulink_opts;
 
 ocp.solver_options.regularize_method  = 'PROJECT';
 ocp.solver_options.nlp_solver_max_iter= 500;
@@ -230,8 +224,10 @@ delta_data  = zeros(1, N_sim+1);
 
 for i = 1 : N_sim
 
-    % Provide current state to MPC
+    % Provide current state to MPC + warmup
     ocp_solver.set('constr_x0', x_sim(:,i));
+    ocp_solver.set('init_x', reshape(ocp_solver.get('x'),1,[]));
+    ocp_solver.set('init_u', reshape(ocp_solver.get('u'),1,[]));
 
     % Rebuild references for horizon
     tN    = 0 : Ts : (N)*Ts;
@@ -262,8 +258,9 @@ for i = 1 : N_sim
     end
 
     % Get new control (steering rate)
-    d_delta      = ocp_solver.get('u', 0);
-    u_sim(:, i)  = d_delta;
+    u_sim(:, i) = ocp_solver.get('u', 0);
+    d_delta = u_sim(1, i);
+    Fx = u_sim(2, i);
 
     % Current steering angle
     delta_current = delta_data(i);
@@ -273,6 +270,10 @@ for i = 1 : N_sim
 
     % Steering angle vs. time for [0, Ts]
     vehicle_4dof.deltaf = delta_current + d_delta * TSPAN;
+
+    % Longitudinal force wheels
+    vehicle_4dof.FXFRONTLEFT = Fx/2;
+    vehicle_4dof.FXFRONTRIGHT = Fx/2;
 
     % Create local simulator
     sim_openvd = Simulator(vehicle_4dof, TSPAN);
@@ -326,7 +327,7 @@ y_ref(1, :) = par.V0;
 [~, y_ref(2,:), ~] = reference_real_time(par.V0, t_sim);
 y_ref(3, 2:end) = zeros(1, N_sim);
 
-figure; hold on;
+figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
 plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
 viscircles([Xobs, Yobs], R, 'Color','k');
@@ -334,9 +335,19 @@ xlabel('X [m]'); ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference');
 legend; grid on;
 
-figure; hold on;
+figure(2); clf(2); hold on;
 plot(t_sim, delta_data, 'LineWidth',2);
 xlabel('Time [s]');
 ylabel('Steering Angle [rad]');
 title('Steering Angle Over Time');
 grid on;
+
+figure(3); clf(3);
+plot(t_sim,x_sim(1,:))
+xlabel('Time [s]');
+ylabel('Velocity [m/s]');
+title('Velocity Over Time');
+grid on;
+
+figure(4); clf(4);
+plot(t_sim(1:N_sim),u_sim(2,:))

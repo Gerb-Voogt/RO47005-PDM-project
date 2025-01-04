@@ -14,7 +14,7 @@ function model= car_PDM_model(par)
     g = par.g;
 
     nx = 7;
-    nu = 1;
+    nu = 2;
 
 
     % States
@@ -31,10 +31,11 @@ function model= car_PDM_model(par)
 
     % Input
     d_delta = SX.sym('d_delta');
-    u = d_delta;
+    Fx = SX.sym('Fx');
+    u = vertcat(d_delta,Fx);
 
     % Equations of motion
-    dvx = vy * r;
+    dvx = vy * r+Fx/mass*cos(delta);
     dXp = vx*cos(yaw) - vy*sin(yaw);
     dYp = vx*sin(yaw) + vy*cos(yaw);
     dvy = -((Calpha_front + Calpha_rear)/(mass*vx))*vy ...
