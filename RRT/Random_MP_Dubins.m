@@ -10,20 +10,59 @@ carRadius = 6; % Car turning radius constraint
 goalRegion = 0.4*roadWidth;
 stepSize = 1; % Step size for motion primitives
 roadLength = 100;
-nObstacles = 4;
+nObstacles = 1;
 minObstDist = 2;
-stepNumber = 10;
+stepNumber = 100;
 
 %% Vehicle MPC parameters (for spacing)
-
+% 
+step_multiplier = 10;
 v_0 = 50/3.6;
-Ts = 0.1 ;
-stepNumber = v_0 * Ts / stepSize;
-
+Ts = 0.1;
+stepNumber = round(v_0 * Ts / stepSize);
+stepSize = v_0 * Ts / stepNumber;
+stepNumber = stepNumber * step_multiplier
 
 % Define sinusoidal road centerline
+A = rand;
+B = rand;
+
+
+
 roadCenterlineX = linspace(0, roadLength, 100);
-roadCenterlineY = roadWidth / 2 + (rand * 5 * sin(rand * 0.05 * roadCenterlineX)); % Sinusoidal road % New curved road
+roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); % Sinusoidal road % New curved road
+
+% Define sinusoidal road centerline
+roadLength = 100; % Example length
+roadWidth = 10; % Example width
+roadCenterlineX = linspace(0, roadLength, 10000); % High-resolution X points
+roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); % Sinusoidal road
+
+% Calculate the cumulative distance along the road
+dx = diff(roadCenterlineX);
+dy = diff(roadCenterlineY);
+distances = sqrt(dx.^2 + dy.^2); % Euclidean distances between consecutive points
+cumulativeDistances = [0, cumsum(distances)]; % Cumulative distances starting at 0
+
+% Resample at equal intervals
+desiredSpacing = stepSize; % Desired spacing between points
+newCumulativeDistances = 0:desiredSpacing:cumulativeDistances(end); % New sampling points
+
+% Interpolate to find new centerline points
+resampledX = interp1(cumulativeDistances, roadCenterlineX, newCumulativeDistances);
+resampledY = interp1(cumulativeDistances, roadCenterlineY, newCumulativeDistances);
+
+% Plot the results
+plot(roadCenterlineX, roadCenterlineY, 'b-', 'DisplayName', 'Original Centerline');
+hold on;
+plot(resampledX, resampledY, 'ro-', 'DisplayName', 'Resampled Centerline');
+legend;
+xlabel('X');
+ylabel('Y');
+title('Resampled Road Centerline');
+grid on;
+
+
 
 % Define the environment
 % Define the environment
@@ -184,11 +223,11 @@ function DubinsPath = generateDubinsPath(state, primitive, turningRadius, stepNu
     end
     
     % Initialize output array
-    DubinsPath = zeros(stepNumber+1, 3);
+    DubinsPath = zeros(stepNumber, 3);
     DubinsPath(1, :) = state; % Starting point
     
     % Generate interpolated points
-    for i = 2:stepNumber+1
+    for i = 2:stepNumber
         if abs(curvature) < 1e-6
             % Straight line interpolation
             DubinsPath(i, :) = DubinsPath(i - 1, :) + stepDelta;
@@ -417,4 +456,10 @@ end
 % clc;
 % clear;
 % close all;
+path_resampled = bestDubins(1:10:end, 1:2);
+
 distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
+distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
+
+distances_road = sqrt(diff(resampledX).^2 + diff(resampledY).^2);
+resampledRoad = [resampledX(:), resampledY(:)];
