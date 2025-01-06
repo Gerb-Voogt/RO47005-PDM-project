@@ -1,3 +1,5 @@
+save_scenarios = false;
+
 roadWidth = 2; % Width of the road
 stepSize = 1; % Step size for motion primitives
 roadLength = 100;
@@ -20,9 +22,6 @@ stepNumber = stepNumber * step_multiplier;
 scenarios = struct();
 for icase = 1:nCases
     for i = 1:nScenarios
-        
-        
-        
         % Define sinusoidal road centerline
         A = rand;
         B = rand;
@@ -73,6 +72,10 @@ for icase = 1:nCases
         scenarios(icase,i).roadCenterline = resampledRoad;
         scenarios(icase,i).obstacles = obstacles;
     end
+end
+
+if save_scenarios
+save('TestPath.mat','scenarios')
 end
 
 function obstacles = defineObstacles(n,roadCenterlineX,roadCenterlineY,roadWidth,start,goal,min_obst_dist)
