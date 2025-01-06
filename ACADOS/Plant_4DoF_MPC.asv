@@ -91,14 +91,11 @@ ocp.constraints.lbu       = -d_delta_thd;
 ocp.constraints.ubu       =  d_delta_thd;
 
 % Obstacle constraint
-n_obs = 2;
-
-Xobs = [60;120];    % Obstacle X
-Yobs = [1;-3];     % Obstacle Y
+Xobs = 60;    % Obstacle X
+Yobs = 1;     % Obstacle Y
 R    = 5;     % Min radius from obstacle
 
-h_obs = [(model.x(2) - Xobs(1))^2 + (model.x(3) - Yobs(1))^2 - R^2; ...
-         (model.x(2) - Xobs(2))^2 + (model.x(3) - Yobs(2))^2 - R^2];
+h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
 
 % Nonlinear constraints: h >= 0
 h = [h_obs];
@@ -106,15 +103,15 @@ ocp.model.con_h_expr   = h;
 ocp.model.con_h_expr_0 = h;
 
 Inf_val = get_acados_infty();
-ocp.constraints.lh    = zeros(n_obs,1);
-ocp.constraints.uh    = ones(n_obs,1)*Inf_val;
-ocp.constraints.lh_0  = zeros(n_obs,1);
-ocp.constraints.uh_0  = ones(n_obs,1)*Inf_val;
+ocp.constraints.lh    = 0;
+ocp.constraints.uh    = Inf_val;
+ocp.constraints.lh_0  = 0;
+ocp.constraints.uh_0  = Inf_val;
 
 % Slack variables (soft constraints)
-ocp.constraints.idxsh    = [0,1];
-ocp.constraints.idxsh_0  = [0,1];
-ns                       = n_obs;
+ocp.constraints.idxsh    = 0;
+ocp.constraints.idxsh_0  = 0;
+ns                       = 1;
 slack_penalty            = 1e9;
 
 ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
@@ -215,7 +212,7 @@ vehicle_4dof.mR0 = par.m_r;
 %  4) SIMULATION
 % ========================================================================
 % Simulation length
-N_sim       = 20 / Ts;   % 10-second simulation
+N_sim       = 10 / Ts;   % 10-second simulation
 x_sim       = zeros(nx, N_sim+1);
 x_sim(:,1)  = x0;
 u_sim       = zeros(nu, N_sim);
@@ -244,9 +241,9 @@ for i = 1 : N_sim
 
     % Set path references
     for k = 0 : N-1
-        % ref_idx      = closest_idx + k;
+        ref_idx      = closest_idx + k;
         % Clamp if we exceed path length
-        % ref_idx      = min(ref_idx, length(path.x));
+        ref_idx      = min(ref_idx, length(path.x));
 
         yref_stage      = zeros(nx+nu, 1);
         yref_stage(1)   = par.V0;       % vx reference
@@ -260,13 +257,13 @@ for i = 1 : N_sim
     end
 
     % Terminal reference
-    % ref_idx_e  = closest_idx + N;
-    % ref_idx_e  = min(ref_idx_e, length(path.x));
-    % yref_stage_e = [par.V0; path.x(ref_idx_e); path.y(ref_idx_e); 0; 0; 0; 0];
-    % ocp_solver.set('cost_y_ref_e', yref_stage_e);
-
-    yref_stage_e = [par.V0; x_ref_hor(N+1); y_ref_hor(N+1); 0; 0; 0; 0];
+    ref_idx_e  = closest_idx + N;
+    ref_idx_e  = min(ref_idx_e, length(path.x));
+    yref_stage_e = [par.V0; path.x(ref_idx_e); path.y(ref_idx_e); 0; 0; 0; 0];
     ocp_solver.set('cost_y_ref_e', yref_stage_e);
+
+    % yref_stage_e = [par.V0; x_ref_hor(N+1); y_ref_hor(N+1); 0; 0; 0; 0];
+    % ocp_solver.set('cost_y_ref_e', yref_stage_e);
 
     % Solve OCP
     ocp_solver.solve();
@@ -348,8 +345,8 @@ y_ref(3, 2:end) = zeros(1, N_sim);
 
 figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
-% plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
+plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 viscircles([Xobs, Yobs], R, 'Color','k');
 xlabel('X [m]'); ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference');
