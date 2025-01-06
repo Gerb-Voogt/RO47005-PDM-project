@@ -14,6 +14,7 @@ veh_parameters
 % path_ref = importdata("path.mat");
 path_ref = importdata("road_200.mat");
 % path_ref = importdata("road_centerline.mat");
+% path_ref = importdata("scenarios_extended.mat");
 path.x = path_ref(:,1);
 path.y = path_ref(:,2);
 
@@ -100,8 +101,8 @@ ocp.constraints.lbu       = [-d_delta_thd,-par.mass*par.g];
 ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
 % Obstacle constraint
-Xobs = [60;69;150];    % Obstacle X
-Yobs = [0.1;0.1;27];  % Obstacle Y
+Xobs = [20;21;30];    % Obstacle X
+Yobs = [5;5;5];  % Obstacle Y
 R    = 1;     % Min radius from obstacle
 theta = [0;0;0.2];
 a = [4.8;4.8;4.8]; % minor-axis
@@ -187,20 +188,24 @@ u_traj_init = zeros(nu, N);
 
 ocp_solver.set('constr_x0', x0);
 
-% Build a reference path for initialization
-t = Ts * (0:N);
-[~, x_init, y_init] = reference_real_time(par.V0, t);
-if length(x_init) == 1, x_init = repmat(x_init, 1, N+1); end
-if length(y_init) == 1, y_init = repmat(y_init, 1, N+1); end
+% Allocate matrix for states
+x_init = zeros(nx, N);
 
-x_traj_init = reshape([repmat(par.V0,1,N+1);
-                       x_init;
-                       y_init;
-                       zeros(4,N+1)],1,[]);
+for k = 1 : N
+    x_init(1,k) = par.V0;         % vx
+    x_init(2,k) = path.x(k);      % Xp
+    x_init(3,k) = path.y(k);      % Yp
+    x_init(4,k) = 0.0;            % vy
+    x_init(5,k) = 0.0;            % yaw
+    x_init(6,k) = 0.0;            % r
+    x_init(7,k) = 0.0;            % delta
+end
 
-ocp_solver.set('init_x', x_traj_init);
-ocp_solver.set('init_u', u_traj_init);
-ocp_solver.set('init_pi', zeros(nx, N));
+% Now flatten or keep as (nx, N). The Acados OCP solver expects
+% a single vector of dimension nx*N. We can reshape accordingly:
+x_init = reshape(x_init, nx*N, 1);
+
+ocp_solver.set('init_x', [x0;x_init]);
 
 
 %% ========================================================================
@@ -259,14 +264,6 @@ for i = 1 : N_sim
     ocp_solver.set('constr_x0', x_sim(:,i));
     ocp_solver.set('init_x', reshape(ocp_solver.get('x'),1,[]));
     ocp_solver.set('init_u', reshape(ocp_solver.get('u'),1,[]));
-
-    % Rebuild references for horizon
-    tN    = 0 : Ts : (N)*Ts;
-    shift = (i-1)*Ts;
-    t_hor = shift + tN;
-    [~, x_ref_hor, y_ref_hor] = reference_real_time(par.V0, t_hor);
-    if length(x_ref_hor)==1, x_ref_hor = repmat(x_ref_hor,1,N+1); end
-    if length(y_ref_hor)==1, y_ref_hor = repmat(y_ref_hor,1,N+1); end
 
     closest_idx = findClosestIndex(x_sim(2,i), x_sim(3,i), path);
 
@@ -363,16 +360,14 @@ end
 %  5) PLOTTING
 % ========================================================================
 t_sim       = 0 : Ts : (N_sim * Ts);
-y_ref       = zeros(nx, N_sim+1);
-y_ref(1, :) = par.V0;
-[~, y_ref(2,:), ~] = reference_real_time(par.V0, t_sim);
-y_ref(3, 2:end) = zeros(1, N_sim);
 
 figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-% plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-viscircles([Xobs, Yobs], R, 'Color','k');
+% plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+plotEllipses(obstacle)
+% viscircles([Xobs, Yobs], R, 'Color','k');
+
 xlabel('X [m]'); ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference');
 legend; grid on;
@@ -401,4 +396,34 @@ function idx = findClosestIndex(curX, curY, path)
 % findClosestIndex: returns the index in path.x,path.y that is closest to (curX, curY).
     dist_array = (path.x - curX).^2 + (path.y - curY).^2;
     [~, idx]   = min(dist_array);
+end
+
+function plotEllipses(obstacles)
+    % PLOTELLIPSES Plots ellipses defined in the obstacles array.
+    % Input:
+    %   obstacles: A matrix where each row defines an ellipse with the format
+    %              [x_center, y_center, semi_major, semi_minor, rotation_angle]
+    
+    for i = 1:size(obstacles, 1)
+        % Extract ellipse parameters
+        xCenter = obstacles(i, 1);
+        yCenter = obstacles(i, 2);
+        a = obstacles(i, 3); % Semi-major axis
+        b = obstacles(i, 4); % Semi-minor axis
+        theta = obstacles(i, 5); % Rotation angle in radians
+
+        % Generate ellipse points
+        t = linspace(0, 2*pi, 100); % Parameter for ellipse points
+        x = a * cos(t); % X-coordinates in the ellipse frame
+        y = b * sin(t); % Y-coordinates in the ellipse frame
+
+        % Rotate and translate ellipse points
+        R = [cos(theta), -sin(theta); sin(theta), cos(theta)]; % Rotation matrix
+        ellipsePoints = R * [x; y]; % Apply rotation
+        xWorld = ellipsePoints(1, :) + xCenter; % Translate x-coordinates
+        yWorld = ellipsePoints(2, :) + yCenter; % Translate y-coordinates
+
+        % Plot the ellipse
+        fill(xWorld, yWorld, 'r', 'FaceAlpha', 0.5, 'EdgeColor', 'none'); % Transparent red ellipse
+    end
 end
