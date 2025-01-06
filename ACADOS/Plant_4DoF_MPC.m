@@ -10,9 +10,18 @@ check_acados_requirements()
 % Load vehicle parameters
 veh_parameters
 
+%Load reference path
+% path_ref = importdata("path.mat");
+path_ref = importdata("road_200.mat");
+% path_ref = importdata("road_centerline.mat");
+path.x = path_ref(:,1);
+path.y = path_ref(:,2);
+
+Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
+
 % Time and horizon settings
 Ts   = 0.1;
-N    = 50;               % Prediction horizon
+N    = 30;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
 TSPAN = 0 : Ts/resol : Ts;
@@ -23,10 +32,10 @@ nx    = length(model.x);
 nu    = length(model.u);
 
 % Initial condition for MPC states: [vx, Xp, Yp, vy, yaw, r, delta]
-x0 = [par.V0; 0; 0; 0; 0; 0; 0];
+x0 = [par.V0; path.x(1); path.y(1); 0; Yaw0; 0; 0];
 
 % OpenVD model states: [X, Y, PSI, THETA, V, ALPHAT, dPSI, dTHETA]
-x_adv0 = [0; 0; 0; 0; par.V0; 0; 0; 0];
+x_adv0 = [path.x(1); path.y(1); Yaw0; 0; par.V0; 0; 0; 0];
 
 %% ========================================================================
 %  2) ACADOS + OCP SETTINGS
@@ -35,15 +44,15 @@ ocp = AcadosOcp();
 ocp.model = model;
 
 % Cost Weights
-w_vx     = 1e2;
-w_Xp     = 1e0;
-w_Yp     = 1e0;
+w_vx     = 1e-3;
+w_Xp     = 1e1;
+w_Yp     = 1e1;
 w_vy     = 0e-2;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
 w_delta  = 0e1;
 
-w_d_delta= 1e0;
+w_d_delta= 1e1;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
@@ -86,14 +95,14 @@ ocp.constraints.lbx       = [0; -delta_thd];
 ocp.constraints.ubx       = [vx_thd; delta_thd];
 
 % Bounds on steering rate input: d_delta
-ocp.constraints.idxbu     = 0;  % only one input
-ocp.constraints.lbu       = -d_delta_thd;
-ocp.constraints.ubu       =  d_delta_thd;
+ocp.constraints.idxbu     = [0,1];  % only one input
+ocp.constraints.lbu       = [-d_delta_thd,-par.mass*par.g];
+ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
 % Obstacle constraint
-Xobs = 60;    % Obstacle X
-Yobs = 1;     % Obstacle Y
-R    = 5;     % Min radius from obstacle
+Xobs = 30;    % Obstacle X
+Yobs = 7;     % Obstacle Y
+R    = 2;     % Min radius from obstacle
 
 h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
 
