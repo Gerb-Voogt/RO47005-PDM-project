@@ -100,12 +100,33 @@ ocp.constraints.lbu       = [-d_delta_thd,-par.mass*par.g];
 ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
 % Obstacle constraint
-Xobs = 30;    % Obstacle X
-Yobs = 7;     % Obstacle Y
-R    = 2;     % Min radius from obstacle
+Xobs = [60;69;150];    % Obstacle X
+Yobs = [0.1;0.1;27];  % Obstacle Y
+R    = 1;     % Min radius from obstacle
+theta = [0;0;0.2];
+a = [4.8;4.8;4.8]; % minor-axis
+b = [1.84;1.84;1.84]; % major-axis
 
-h_obs = [(model.x(2) - Xobs(1))^2 + (model.x(3) - Yobs(1))^2 - R^2; ...
-         (model.x(2) - Xobs(2))^2 + (model.x(3) - Yobs(2))^2 - R^2];
+n_obs = length(Xobs);
+obstacle = [Xobs,Yobs,a,b,theta];
+
+x = model.x(2);
+y = model.x(3);
+
+% Translate point so that obstacle center is at origin
+dx = x - Xobs;
+dy = y - Yobs;
+
+% Rotate by theta to align ellipse with axes in its local frame
+cos_t = cos(theta);
+sin_t = sin(theta);
+
+x_rot =  dx.*cos_t + dy.*sin_t;
+y_rot =  dx.*sin_t - dy.*cos_t;
+
+% Ellipse constraint: h_obs >= 0 means "outside the ellipse"
+h_obs = (x_rot.^2)./(a.^2) + (y_rot.^2)./(b.^2) - 1;
+% h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
 
 % Nonlinear constraints: h >= 0
 h = [h_obs];
@@ -119,10 +140,10 @@ ocp.constraints.lh_0  = zeros(n_obs,1);
 ocp.constraints.uh_0  = ones(n_obs,1)*Inf_val;
 
 % Slack variables (soft constraints)
-ocp.constraints.idxsh    = [0,1];
-ocp.constraints.idxsh_0  = [0,1];
+ocp.constraints.idxsh    = 0:n_obs-1;
+ocp.constraints.idxsh_0  = 0:n_obs-1;
 ns                       = n_obs;
-slack_penalty            = 1e9;
+slack_penalty            = 1e12;
 
 ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
 ocp.cost.Zu_0 = slack_penalty * ones(ns,1);
@@ -247,32 +268,26 @@ for i = 1 : N_sim
     if length(x_ref_hor)==1, x_ref_hor = repmat(x_ref_hor,1,N+1); end
     if length(y_ref_hor)==1, y_ref_hor = repmat(y_ref_hor,1,N+1); end
 
-    % closest_idx = findClosestIndex(x_sim(2,i), x_sim(3,i), path);
+    closest_idx = findClosestIndex(x_sim(2,i), x_sim(3,i), path);
 
     % Set path references
     for k = 0 : N-1
-        % ref_idx      = closest_idx + k;
+        ref_idx      = closest_idx + k;
         % Clamp if we exceed path length
-        % ref_idx      = min(ref_idx, length(path.x));
+        ref_idx      = min(ref_idx, length(path.x));
 
         yref_stage      = zeros(nx+nu, 1);
         yref_stage(1)   = par.V0;       % vx reference
-        % yref_stage(2)   = path.x(ref_idx);
-        % yref_stage(3)   = path.y(ref_idx);
-
-        yref_stage(2)   = x_ref_hor(k+1);
-        yref_stage(3)   = y_ref_hor(k+1);
+        yref_stage(2)   = path.x(ref_idx);
+        yref_stage(3)   = path.y(ref_idx);
 
         ocp_solver.set('cost_y_ref', yref_stage, k);
     end
 
     % Terminal reference
-    % ref_idx_e  = closest_idx + N;
-    % ref_idx_e  = min(ref_idx_e, length(path.x));
-    % yref_stage_e = [par.V0; path.x(ref_idx_e); path.y(ref_idx_e); 0; 0; 0; 0];
-    % ocp_solver.set('cost_y_ref_e', yref_stage_e);
-
-    yref_stage_e = [par.V0; x_ref_hor(N+1); y_ref_hor(N+1); 0; 0; 0; 0];
+    ref_idx_e  = closest_idx + N;
+    ref_idx_e  = min(ref_idx_e, length(path.x));
+    yref_stage_e = [par.V0; path.x(ref_idx_e); path.y(ref_idx_e); 0; 0; 0; 0];
     ocp_solver.set('cost_y_ref_e', yref_stage_e);
 
     % Solve OCP
@@ -355,8 +370,8 @@ y_ref(3, 2:end) = zeros(1, N_sim);
 
 figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
-% plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
+plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 viscircles([Xobs, Yobs], R, 'Color','k');
 xlabel('X [m]'); ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference');
