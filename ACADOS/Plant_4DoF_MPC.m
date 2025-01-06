@@ -229,25 +229,41 @@ for i = 1 : N_sim
     ocp_solver.set('init_x', reshape(ocp_solver.get('x'),1,[]));
     ocp_solver.set('init_u', reshape(ocp_solver.get('u'),1,[]));
 
-    % Rebuild references for horizon
-    tN    = 0 : Ts : (N)*Ts;
-    shift = (i-1)*Ts;
-    t_hor = shift + tN;
-    [~, x_ref_hor, y_ref_hor] = reference_real_time(par.V0, t_hor);
-    if length(x_ref_hor)==1, x_ref_hor = repmat(x_ref_hor,1,N+1); end
-    if length(y_ref_hor)==1, y_ref_hor = repmat(y_ref_hor,1,N+1); end
+    % % Rebuild references for horizon
+    % tN    = 0 : Ts : (N)*Ts;
+    % shift = (i-1)*Ts;
+    % t_hor = shift + tN;
+    % [~, x_ref_hor, y_ref_hor] = reference_real_time(par.V0, t_hor);
+    % if length(x_ref_hor)==1, x_ref_hor = repmat(x_ref_hor,1,N+1); end
+    % if length(y_ref_hor)==1, y_ref_hor = repmat(y_ref_hor,1,N+1); end
+
+    closest_idx = findClosestIndex(x_sim(2,i), x_sim(3,i), path);
 
     % Set path references
     for k = 0 : N-1
+        ref_idx      = closest_idx + k;
+        % Clamp if we exceed path length
+        ref_idx      = min(ref_idx, length(path.x));
+
         yref_stage      = zeros(nx+nu, 1);
         yref_stage(1)   = par.V0;       % vx reference
-        yref_stage(2)   = x_ref_hor(k+1);
-        yref_stage(3)   = y_ref_hor(k+1);
+        yref_stage(2)   = path.x(ref_idx);
+        yref_stage(3)   = path.y(ref_idx);
+
+        % yref_stage(2)   = x_ref_hor(k+1);
+        % yref_stage(3)   = y_ref_hor(k+1);
+
         ocp_solver.set('cost_y_ref', yref_stage, k);
     end
 
-    yref_stage_e = [par.V0; x_ref_hor(N+1); y_ref_hor(N+1); 0; 0; 0; 0];
+    % Terminal reference
+    ref_idx_e  = closest_idx + N;
+    ref_idx_e  = min(ref_idx_e, length(path.x));
+    yref_stage_e = [par.V0; path.x(ref_idx_e); path.y(ref_idx_e); 0; 0; 0; 0];
     ocp_solver.set('cost_y_ref_e', yref_stage_e);
+
+    % yref_stage_e = [par.V0; x_ref_hor(N+1); y_ref_hor(N+1); 0; 0; 0; 0];
+    % ocp_solver.set('cost_y_ref_e', yref_stage_e);
 
     % Solve OCP
     ocp_solver.solve();
@@ -329,7 +345,8 @@ y_ref(3, 2:end) = zeros(1, N_sim);
 
 figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
+% plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
+plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 viscircles([Xobs, Yobs], R, 'Color','k');
 xlabel('X [m]'); ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference');
@@ -351,3 +368,12 @@ grid on;
 
 figure(4); clf(4);
 plot(t_sim(1:N_sim),u_sim(2,:))
+
+%% ========================================================================
+%  HELPER FUNCTION
+% ========================================================================
+function idx = findClosestIndex(curX, curY, path)
+% findClosestIndex: returns the index in path.x,path.y that is closest to (curX, curY).
+    dist_array = (path.x - curX).^2 + (path.y - curY).^2;
+    [~, idx]   = min(dist_array);
+end
