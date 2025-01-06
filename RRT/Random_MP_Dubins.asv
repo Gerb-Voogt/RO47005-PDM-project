@@ -51,7 +51,7 @@ newCumulativeDistances = 0:desiredSpacing:cumulativeDistances(end); % New sampli
 % Interpolate to find new centerline points
 resampledX = interp1(cumulativeDistances, roadCenterlineX, newCumulativeDistances);
 resampledY = interp1(cumulativeDistances, roadCenterlineY, newCumulativeDistances);
-resampledRoad = [resampledX(:), resampledY(:)];
+resampledRoa
 % Plot the results
 plot(roadCenterlineX, roadCenterlineY, 'b-', 'DisplayName', 'Original Centerline');
 hold on;
