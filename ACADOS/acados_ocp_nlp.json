@@ -1,6 +1,6 @@
 {
-	"acados_include_path":"D:\\Programmas\\acados\\interfaces\\acados_matlab_octave\\..\\../include",
-	"acados_lib_path":"D:\\Programmas\\acados\\interfaces\\acados_matlab_octave\\..\\../lib",
+	"acados_include_path":"C:\\Users\\maart\\OneDrive\\Documenten\\acados\\examples\\acados_matlab_octave\\..\\../include",
+	"acados_lib_path":"C:\\Users\\maart\\OneDrive\\Documenten\\acados\\examples\\acados_matlab_octave\\..\\../lib",
 	"code_export_directory":"c_generated_code",
 	"constraints":{
 		"C":[],
@@ -42,10 +42,12 @@
 		"idxsg":[],
 		"idxsg_e":[],
 		"idxsh":[
-			0
+			0,
+			1
 		],
 		"idxsh_0":[
-			0
+			0,
+			1
 		],
 		"idxsh_e":[],
 		"idxsphi":[],
@@ -71,9 +73,11 @@
 		"lg":[],
 		"lg_e":[],
 		"lh":[
+			0,
 			0
 		],
 		"lh_0":[
+			0,
 			0
 		],
 		"lh_e":[],
@@ -98,9 +102,11 @@
 		"lsg":[],
 		"lsg_e":[],
 		"lsh":[
+			0,
 			0
 		],
 		"lsh_0":[
+			0,
 			0
 		],
 		"lsh_e":{
@@ -143,9 +149,11 @@
 		"ug":[],
 		"ug_e":[],
 		"uh":[
+			10000000000,
 			10000000000
 		],
 		"uh_0":[
+			10000000000,
 			10000000000
 		],
 		"uh_e":[],
@@ -170,9 +178,11 @@
 		"usg":[],
 		"usg_e":[],
 		"ush":[
+			0,
 			0
 		],
 		"ush_0":[
+			0,
 			0
 		],
 		"ush_e":{
@@ -472,16 +482,20 @@
 				]
 		],
 		"Zl":[
+			1000000000,
 			1000000000
 		],
 		"Zl_0":[
+			1000000000,
 			1000000000
 		],
 		"Zl_e":[],
 		"Zu":[
+			1000000000,
 			1000000000
 		],
 		"Zu_0":[
+			1000000000,
 			1000000000
 		],
 		"Zu_e":[],
@@ -529,16 +543,20 @@
 			0
 		],
 		"zl":[
+			0,
 			0
 		],
 		"zl_0":[
+			0,
 			0
 		],
 		"zl_e":[],
 		"zu":[
+			0,
 			0
 		],
 		"zu_0":[
+			0,
 			0
 		],
 		"zu_e":[]
@@ -561,8 +579,8 @@
 		"nbxe_0":7,
 		"ng":0,
 		"ng_e":0,
-		"nh":1,
-		"nh_0":1,
+		"nh":2,
+		"nh_0":2,
 		"nh_e":0,
 		"np":0,
 		"np_global":0,
@@ -572,16 +590,16 @@
 		"nr":0,
 		"nr_0":0,
 		"nr_e":0,
-		"ns":1,
-		"ns_0":1,
+		"ns":2,
+		"ns_0":2,
 		"ns_e":0,
 		"nsbu":0,
 		"nsbx":0,
 		"nsbx_e":0,
 		"nsg":0,
 		"nsg_e":0,
-		"nsh":1,
-		"nsh_0":1,
+		"nsh":2,
+		"nsh_0":2,
 		"nsh_e":0,
 		"nsphi":0,
 		"nsphi_0":0,
