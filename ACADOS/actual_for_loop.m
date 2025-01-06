@@ -7,7 +7,7 @@
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-icase = 6; 
+icase = 5; 
 
 % Deifne method, lijkt mij handig om dan die andere twee scriptjes net een
 % beetje aan te passen zodat we dit er zo in kunnen stoppen, denk dat dat
@@ -26,15 +26,19 @@ save output_data scenarios
 for j = 1:size(scenarios,2)
     
     index.j = j;
+
     if index.method == "local_MPC"
         save index index
         
         Plant_4DoF_MPC
     
         load output_data
-        scenarios(icase,j).output_loc = [t_sim;x_sim];
+
+        u = [zeros(2,1),u_sim]; % because no input at initial timestep
+        sol_time = [0,sol_time]; % because no solve time at initial timestep
+        scenarios(icase,j).output_loc = [t_sim;x_sim;u;sol_time];
         
-        save output_data scenarios
+        save output_data scenarios  % timesteps, vx, Xp, Yp, vy, yaw, r, delta, d_delte, solver time
 
     elseif index.method == "global_MPC"
         save index index

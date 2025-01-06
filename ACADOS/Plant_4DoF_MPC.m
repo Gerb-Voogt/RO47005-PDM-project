@@ -46,14 +46,14 @@ ocp.model = model;
 
 % Cost Weights
 w_vx     = 1e-3;
-w_Xp     = 1e-1;
-w_Yp     = 1e-1;
-w_vy     = 1e1;
+w_Xp     = 1e1;
+w_Yp     = 1e1;
+w_vy     = 1e-3;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
 w_delta  = 1e1;
 
-w_d_delta= 1e1;
+w_d_delta= 1e-1;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
@@ -155,7 +155,7 @@ if scenarios(icase,j).obstacles ~= 0
     ocp.constraints.idxsh    = 0:n_obs-1;
     ocp.constraints.idxsh_0  = 0:n_obs-1;
     ns                       = n_obs;
-    slack_penalty            = 1e9;
+    slack_penalty            = 1e12;
     
     ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
     ocp.cost.Zu_0 = slack_penalty * ones(ns,1);
@@ -307,9 +307,12 @@ u_sim       = zeros(nu, N_sim);
 X_adv_data  = zeros(8, N_sim+1);
 X_adv_data(:,1) = x_adv0;
 delta_data  = zeros(1, N_sim+1);
+sol_time = zeros(1, N_sim);
 
+fprintf("\nstarting scenario/simulation %d \n",j);
 for i = 1 : N_sim
-
+    
+    tStart = tic;
     % Provide current state to MPC + warmup
     ocp_solver.set('constr_x0', x_sim(:,i));
     ocp_solver.set('init_x', reshape(ocp_solver.get('x'),1,[]));
@@ -341,9 +344,11 @@ for i = 1 : N_sim
     ocp_solver.solve();
     status = ocp_solver.get('status');
     if status ~= 0
-        warning('acados OCP solver returned status %d, not successful!', status);
         ocp_solver.print('stat');
+        warning('acados OCP solver returned status %d, at timestep %d, not successful!', status,i*Ts);
     end
+
+    sol_time(i) = ocp_solver.get('time_tot');
 
     % Get new control (steering rate)
     u_sim(:, i) = ocp_solver.get('u', 0);
@@ -424,26 +429,26 @@ xlabel('X [m]');ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference for sim',j);
 legend; grid on;
 
-figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
-plot(t_sim, delta_data, 'LineWidth',2);
-xlabel('Time [s]');
-ylabel('Steering Angle [rad]');
-title('Steering Angle Over Time for sim',j);
-grid on;
-
-figure(3+(j-1)*5); clf(3+(j-1)*5);
-plot(t_sim,x_sim(1,:))
-xlabel('Time [s]');
-ylabel('Velocity [m/s]');
-title('Velocity Over Time for sim',j);
-grid on;
-
-figure(4+(j-1)*5); clf(4+(j-1)*5);
-plot(t_sim(1:N_sim),u_sim(2,:))
-xlabel('Time [s]');
-ylabel('Torque [N]');
-title('Torque Over Time for sim',j);
-grid on;
+% figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
+% plot(t_sim, delta_data, 'LineWidth',2);
+% xlabel('Time [s]');
+% ylabel('Steering Angle [rad]');
+% title('Steering Angle Over Time for sim',j);
+% grid on;
+% 
+% figure(3+(j-1)*5); clf(3+(j-1)*5);
+% plot(t_sim,x_sim(1,:))
+% xlabel('Time [s]');
+% ylabel('Velocity [m/s]');
+% title('Velocity Over Time for sim',j);
+% grid on;
+% 
+% figure(4+(j-1)*5); clf(4+(j-1)*5);
+% plot(t_sim(1:N_sim),u_sim(2,:))
+% xlabel('Time [s]');
+% ylabel('Torque [N]');
+% title('Torque Over Time for sim',j);
+% grid on;
 
 %% ========================================================================
 %  HELPER FUNCTION
