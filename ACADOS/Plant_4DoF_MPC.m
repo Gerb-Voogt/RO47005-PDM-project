@@ -1,7 +1,7 @@
 %% ========================================================================
 %  1) LOADING AND GENERIC SETUP
 % ========================================================================
-clear all; clc; % close all;
+clear all; clc; %close all;
 import casadi.*
 
 % Check requirements for acados
@@ -10,25 +10,19 @@ check_acados_requirements()
 % Load vehicle parameters
 veh_parameters
 
-%Load reference path
-% path_ref = importdata("path.mat");
-
+% Load scenario + case
 load TestPath.mat
-icase = 6; %  
-j = 1;
-
-% path_ref = importdata("road_200.mat");
-% path_ref = importdata("road_centerline.mat");
-% path_ref = importdata("scenarios_extended.mat");
-
+load index
+icase = index.icase;
+j = index.j;
 
 path.x = scenarios(icase,j).roadCenterline(:,1);
 path.y = scenarios(icase,j).roadCenterline(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
-Ts   = 0.1;
-N    = 30;               % Prediction horizon
+Ts   = 0.05;
+N    = 50;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
 TSPAN = 0 : Ts/resol : Ts;
@@ -54,10 +48,10 @@ ocp.model = model;
 w_vx     = 1e-3;
 w_Xp     = 1e-1;
 w_Yp     = 1e-1;
-w_vy     = 1e-2;
+w_vy     = 1e1;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
-w_delta  = 0e1;
+w_delta  = 1e1;
 
 w_d_delta= 1e1;
 w_Fx = 1e-5;
@@ -161,7 +155,7 @@ if scenarios(icase,j).obstacles ~= 0
     ocp.constraints.idxsh    = 0:n_obs-1;
     ocp.constraints.idxsh_0  = 0:n_obs-1;
     ns                       = n_obs;
-    slack_penalty            = 1e12;
+    slack_penalty            = 1e9;
     
     ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
     ocp.cost.Zu_0 = slack_penalty * ones(ns,1);
@@ -417,8 +411,8 @@ end
 % ========================================================================
 t_sim       = 0 : Ts : (N_sim * Ts);
 
-figure(j); clf(1); hold on;
-plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
+figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
+plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 if scenarios(icase,j).obstacles ~= 0
@@ -426,26 +420,30 @@ if scenarios(icase,j).obstacles ~= 0
 end
 % viscircles([Xobs, Yobs], R, 'Color','k');
 
-xlabel('X [m]'); ylabel('Y [m]');
+xlabel('X [m]');ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference for sim',j);
 legend; grid on;
 
-figure(1+j); clf(2); hold on;
+figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
 plot(t_sim, delta_data, 'LineWidth',2);
 xlabel('Time [s]');
 ylabel('Steering Angle [rad]');
 title('Steering Angle Over Time for sim',j);
 grid on;
 
-figure(2+j); clf(3);
+figure(3+(j-1)*5); clf(3+(j-1)*5);
 plot(t_sim,x_sim(1,:))
 xlabel('Time [s]');
 ylabel('Velocity [m/s]');
 title('Velocity Over Time for sim',j);
 grid on;
 
-figure(4); clf(4);
+figure(4+(j-1)*5); clf(4+(j-1)*5);
 plot(t_sim(1:N_sim),u_sim(2,:))
+xlabel('Time [s]');
+ylabel('Torque [N]');
+title('Torque Over Time for sim',j);
+grid on;
 
 %% ========================================================================
 %  HELPER FUNCTION
