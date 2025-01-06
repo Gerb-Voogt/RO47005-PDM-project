@@ -1,6 +1,8 @@
+save_scenarios = false;
+
 roadWidth = 2; % Width of the road
 stepSize = 1; % Step size for motion primitives
-roadLength = 100;
+roadLength = 300;
 minObstDist = 2;
 stepNumber = 100;
 nScenarios = 50;
@@ -20,29 +22,28 @@ stepNumber = stepNumber * step_multiplier;
 scenarios = struct();
 for icase = 1:nCases
     for i = 1:nScenarios
-        
-        
-        
         % Define sinusoidal road centerline
         A = rand;
         B = rand;
         
-        roadCenterlineX = linspace(0, roadLength, 100);
+        roadCenterlineX = linspace(0, 2*roadLength, 10000);
 
         switch icase
             case 1
                 nObstacles = 0;
-                roadCenterlineY = zeros(1,)
+                roadCenterlineY = zeros(1,10000);
             case 2
                 nObstacles = 0;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
             case 3
                 nObstacles = 1;
+                roadCenterlineY = zeros(1,10000);
             case 4
                 nObstacles = 1;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
             case 5
                 nObstacles = randi([nObstmin,nObstmax]);
+                roadCenterlineY = zeros(1,10000);
             case 6
                 nObstacles = randi([nObstmin,nObstmax]);
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
@@ -53,13 +54,7 @@ for icase = 1:nCases
 
        % Sinusoidal road % New curved road
         obstacles = defineObstacles(nObstacles,roadCenterlineX,roadCenterlineY,roadWidth,start(1:2),goal(1:2),minObstDist);
-
-        % Define sinusoidal road centerline
-        roadLength = 100; % Example length
-        roadWidth = 10; % Example width
-        roadCenterlineX = linspace(0, roadLength, 10000); % High-resolution X points
-        roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); % Sinusoidal road
-        
+      
         % Calculate the cumulative distance along the road
         dx = diff(roadCenterlineX);
         dy = diff(roadCenterlineY);
@@ -74,9 +69,13 @@ for icase = 1:nCases
         resampledX = interp1(cumulativeDistances, roadCenterlineX, newCumulativeDistances);
         resampledY = interp1(cumulativeDistances, roadCenterlineY, newCumulativeDistances);
         resampledRoad = [resampledX(:), resampledY(:)];
-        scenarios(i).roadCenterline = resampledRoad;
-        scenarios(i).obstacles = obstacles;
+        scenarios(icase,i).roadCenterline = resampledRoad;
+        scenarios(icase,i).obstacles = obstacles;
     end
+end
+
+if save_scenarios
+save('TestPath.mat','scenarios')
 end
 
 function obstacles = defineObstacles(n,roadCenterlineX,roadCenterlineY,roadWidth,start,goal,min_obst_dist)

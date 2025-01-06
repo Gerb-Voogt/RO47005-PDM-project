@@ -2,10 +2,10 @@ save_scenarios = false;
 
 roadWidth = 2; % Width of the road
 stepSize = 1; % Step size for motion primitives
-roadLength = 100;
+roadLength = 300;
 minObstDist = 2;
 stepNumber = 100;
-nScenarios = 50;
+nScenarios = 2;
 nCases = 6;
 step_multiplier = 10;
 nObstmin = 4;
@@ -26,7 +26,7 @@ for icase = 1:nCases
         A = rand;
         B = rand;
         
-        roadCenterlineX = linspace(0, roadLength, 10000);
+        roadCenterlineX = linspace(0, 2*roadLength, 10000);
 
         switch icase
             case 1
@@ -50,7 +50,7 @@ for icase = 1:nCases
         end
         
         start = [roadCenterlineX(1), roadCenterlineY(1), 0]; % Start position [x, y, theta]
-        goal = [roadCenterlineX(end), roadCenterlineY(end), 0]; % Goal position [x, y, theta]
+        goal = [roadCenterlineX(5000), roadCenterlineY(5000), 0]; % Goal position [x, y, theta]
 
        % Sinusoidal road % New curved road
         obstacles = defineObstacles(nObstacles,roadCenterlineX,roadCenterlineY,roadWidth,start(1:2),goal(1:2),minObstDist);
