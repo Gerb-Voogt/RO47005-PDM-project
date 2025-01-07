@@ -308,6 +308,7 @@ X_adv_data  = zeros(8, N_sim+1);
 X_adv_data(:,1) = x_adv0;
 delta_data  = zeros(1, N_sim+1);
 sol_time = zeros(1, N_sim);
+sol_stat = zeros(1, N_sim);
 
 fprintf("\nstarting scenario/simulation %d \n",j);
 for i = 1 : N_sim
@@ -342,10 +343,10 @@ for i = 1 : N_sim
 
     % Solve OCP
     ocp_solver.solve();
-    status = ocp_solver.get('status');
-    if status ~= 0
+    sol_stat(i) = ocp_solver.get('status');
+    if sol_stat(i) ~= 0
         ocp_solver.print('stat');
-        warning('acados OCP solver returned status %d, at timestep %d, not successful!', status,i*Ts);
+        warning('acados OCP solver returned status %d, at timestep %d, not successful!', sol_stat(i),i*Ts);
     end
 
     sol_time(i) = ocp_solver.get('time_tot');

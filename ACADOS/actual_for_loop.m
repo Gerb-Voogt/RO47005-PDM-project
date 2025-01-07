@@ -7,7 +7,7 @@
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-icase = 5; 
+icase = 4; 
 
 % Deifne method, lijkt mij handig om dan die andere twee scriptjes net een
 % beetje aan te passen zodat we dit er zo in kunnen stoppen, denk dat dat
@@ -23,7 +23,7 @@ index.method = method;
 load TestPath.mat
 save output_data scenarios
 
-for j = 1:size(scenarios,2)
+for j = 1:4 %size(scenarios,2)
     
     index.j = j;
 
@@ -34,11 +34,12 @@ for j = 1:size(scenarios,2)
     
         load output_data
 
-        u = [zeros(2,1),u_sim]; % because no input at initial timestep
-        sol_time = [0,sol_time]; % because no solve time at initial timestep
-        scenarios(icase,j).output_loc = [t_sim;x_sim;u;sol_time];
+        u = [zeros(2,1), u_sim];     % because no input at initial timestep
+        sol_time = [0, sol_time];    % because no solve time at initial timestep
+        sol_stat = [0, sol_stat];    % because no solve status at initial timestep
+        scenarios(icase,j).output_loc = [t_sim; x_sim; u; sol_time; sol_stat];
         
-        save output_data scenarios  % timesteps, vx, Xp, Yp, vy, yaw, r, delta, d_delte, solver time
+        save output_data scenarios  % timesteps, vx, Xp, Yp, vy, yaw, r, delta, d_delte, solver time, solver status
 
     elseif index.method == "global_MPC"
         save index index
