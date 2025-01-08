@@ -10,11 +10,18 @@ check_acados_requirements()
 % Load vehicle parameters
 veh_parameters
 
-Ts   = 0.1;
-path.x = 0:Ts*par.V0:par.V0*10;
-path.y = zeros(length(path.x),1);
+%Load reference path
+data = load('SETUP\TestPath.mat'); 
+load index
+icase = index.icase;
+j = index.j;
+
+path.x = data.scenarios(icase,j).roadCenterline(:,1);
+path.y = data.scenarios(icase,j).roadCenterline(:,2);
+Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
+Ts   = 0.1;
 N    = length(path.x);   % Prediction horizon
 T    = N * Ts;           % Horizon length
 
@@ -24,7 +31,7 @@ nx    = length(model.x);
 nu    = length(model.u);
 
 % Initial condition for MPC states: [vx, Xp, Yp, vy, yaw, r, delta]
-x0 = [par.V0; 0; 0; 0; 0; 0; 0];
+x0 = [par.V0; path.x(1); path.y(1); 0; Yaw0; 0; 0];
 %% ========================================================================
 %  2) ACADOS + OCP SETTINGS
 % ========================================================================
@@ -32,15 +39,15 @@ ocp = AcadosOcp();
 ocp.model = model;
 
 % Cost Weights
-w_vx     = 1e0;
+w_vx     = 1e-3;
 w_Xp     = 1e1;
 w_Yp     = 1e1;
-w_vy     = 0;
-w_yaw    = 0;
-w_r      = 0;
-w_delta  = 0;
+w_vy     = 0e-2;
+w_yaw    = 0e-2;
+w_r      = 0e-2;
+w_delta  = 0e1;
 
-w_d_delta= 1e4;
+w_d_delta= 1e1;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
@@ -83,43 +90,68 @@ ocp.constraints.lbx       = [0; -delta_thd];
 ocp.constraints.ubx       = [vx_thd; delta_thd];
 
 % Bounds on steering rate input: d_delta
-ocp.constraints.idxbu     = 0;  % only one input
-ocp.constraints.lbu       = -d_delta_thd;
-ocp.constraints.ubu       =  d_delta_thd;
+ocp.constraints.idxbu     = [0,1];  % only one input
+ocp.constraints.lbu       = [-d_delta_thd,-par.mass*par.g];
+ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
-% Obstacle constraint
-Xobs = 60;    % Obstacle X
-Yobs = 1;     % Obstacle Y
-R    = 5;     % Min radius from obstacle
+%% Obstacles
+if data.scenarios(icase,j).obstacles ~= 0
 
-h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
+    jobstacles = data.scenarios(icase,j).obstacles;
+    
+    Xobs = jobstacles(:,1);
+    Yobs = jobstacles(:,2);
+    theta = jobstacles(:,5);
+    a = jobstacles(:,3);
+    b = jobstacles(:,4);
 
-% Nonlinear constraints: h >= 0
-h = [h_obs];
-ocp.model.con_h_expr   = h;
-ocp.model.con_h_expr_0 = h;
+    n_obs = length(Xobs);
+    
+    x = model.x(2);
+    y = model.x(3);
+    
+    % Translate point so that obstacle center is at origin
+    dx = x - Xobs;
+    dy = y - Yobs;
+    
+    % Rotate by theta to align ellipse with axes in its local frame
+    cos_t = cos(theta);
+    sin_t = sin(theta);
+    
+    x_rot =  dx.*cos_t + dy.*sin_t;
+    y_rot =  dx.*sin_t - dy.*cos_t;
+    
+    % Ellipse constraint: h_obs >= 0 means "outside the ellipse"
+    h_obs = (x_rot.^2)./(a.^2) + (y_rot.^2)./(b.^2) - 1;
+    
+    % Nonlinear constraints: h >= 0
+    h = [h_obs];
+    ocp.model.con_h_expr   = h;
+    ocp.model.con_h_expr_0 = h;
+    
+    Inf_val = get_acados_infty();
+    ocp.constraints.lh    = zeros(n_obs,1);
+    ocp.constraints.uh    = ones(n_obs,1)*Inf_val;
+    ocp.constraints.lh_0  = zeros(n_obs,1);
+    ocp.constraints.uh_0  = ones(n_obs,1)*Inf_val;
+    
+    % Slack variables (soft constraints)
+    ocp.constraints.idxsh    = 0:n_obs-1;
+    ocp.constraints.idxsh_0  = 0:n_obs-1;
+    ns                       = n_obs;
+    slack_penalty            = 1e12;
+    
+    ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
+    ocp.cost.Zu_0 = slack_penalty * ones(ns,1);
+    ocp.cost.zl_0 = zeros(ns,1);
+    ocp.cost.zu_0 = zeros(ns,1);
+    
+    ocp.cost.Zl   = slack_penalty * ones(ns,1);
+    ocp.cost.Zu   = slack_penalty * ones(ns,1);
+    ocp.cost.zl   = zeros(ns,1);
+    ocp.cost.zu   = zeros(ns,1);
 
-Inf_val = get_acados_infty();
-ocp.constraints.lh    = 0;
-ocp.constraints.uh    = Inf_val;
-ocp.constraints.lh_0  = 0;
-ocp.constraints.uh_0  = Inf_val;
-
-% Slack variables (soft constraints)
-ocp.constraints.idxsh    = 0;
-ocp.constraints.idxsh_0  = 0;
-ns                       = 1;
-slack_penalty            = 1e9;
-
-ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
-ocp.cost.Zu_0 = slack_penalty * ones(ns,1);
-ocp.cost.zl_0 = zeros(ns,1);
-ocp.cost.zu_0 = zeros(ns,1);
-
-ocp.cost.Zl   = slack_penalty * ones(ns,1);
-ocp.cost.Zu   = slack_penalty * ones(ns,1);
-ocp.cost.zl   = zeros(ns,1);
-ocp.cost.zu   = zeros(ns,1);
+end
 
 % Set initial state constraint
 ocp.constraints.x0 = x0;
@@ -186,7 +218,6 @@ end
 yref_stage_e = [par.V0; path.x(N); path.y(N); 0; 0; 0; 0];
 ocp_solver.set('cost_y_ref_e', yref_stage_e);
 
-
 % Solve OCP
 ocp_solver.solve();
 status = ocp_solver.get('status');
@@ -202,13 +233,17 @@ x_sim = ocp_solver.get('x');
 % ========================================================================
 t_sim       = 0 : Ts : (N * Ts);
 
-figure(1); clf(1); hold on;
+figure(j); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-% plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-viscircles([Xobs, Yobs], R, 'Color','k');
+% plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+if data.scenarios(icase,j).obstacles ~= 0
+    plotEllipses(jobstacles)
+end
+% viscircles([Xobs, Yobs], R, 'Color','k');
+
 xlabel('X [m]'); ylabel('Y [m]');
-title('Vehicle Trajectory vs. Reference');
+title('Vehicle Trajectory vs. Reference for sim',j);
 legend; grid on;
 
 figure(3); clf(3);
@@ -217,3 +252,4 @@ xlabel('Time [s]');
 ylabel('Velocity [m/s]');
 title('Velocity Over Time');
 grid on;
+
