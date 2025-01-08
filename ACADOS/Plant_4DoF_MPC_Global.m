@@ -16,8 +16,8 @@ load index
 icase = index.icase;
 j = index.j;
 
-path.x = scenarios(icase,j).roadCenterline(:,1);
-path.y = scenarios(icase,j).roadCenterline(:,2);
+path.x = scenarios(icase,j).roadOptimalReference(:,1);
+path.y = scenarios(icase,j).roadOptimalReference(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings

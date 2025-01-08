@@ -10,9 +10,20 @@ check_acados_requirements()
 % Load vehicle parameters
 veh_parameters
 
+%Load reference path
+% path_ref = importdata("path.mat");
+% path_ref = importdata("road_200.mat");
+% path_ref = importdata("road_centerline.mat");
+% path_ref = importdata("scenarios_extended.mat");
+path_ref = importdata("path_extended.mat");
+path.x = path_ref(:,1);
+path.y = path_ref(:,2);
+
+Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
+
 % Time and horizon settings
 Ts   = 0.1;
-N    = 50;               % Prediction horizon
+N    = 30;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
 TSPAN = 0 : Ts/resol : Ts;
@@ -23,10 +34,10 @@ nx    = length(model.x);
 nu    = length(model.u);
 
 % Initial condition for MPC states: [vx, Xp, Yp, vy, yaw, r, delta]
-x0 = [par.V0; 0; 0; 0; 0; 0; 0];
+x0 = [par.V0; path.x(1); path.y(1); 0; Yaw0; 0; 0];
 
 % OpenVD model states: [X, Y, PSI, THETA, V, ALPHAT, dPSI, dTHETA]
-x_adv0 = [0; 0; 0; 0; par.V0; 0; 0; 0];
+x_adv0 = [path.x(1); path.y(1); Yaw0; 0; par.V0; 0; 0; 0];
 
 %% ========================================================================
 %  2) ACADOS + OCP SETTINGS
@@ -35,15 +46,15 @@ ocp = AcadosOcp();
 ocp.model = model;
 
 % Cost Weights
-w_vx     = 1e2;
-w_Xp     = 1e0;
-w_Yp     = 1e0;
+w_vx     = 1e-3;
+w_Xp     = 1e1;
+w_Yp     = 1e1;
 w_vy     = 0e-2;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
 w_delta  = 0e1;
 
-w_d_delta= 1e0;
+w_d_delta= 1e1;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
@@ -86,16 +97,38 @@ ocp.constraints.lbx       = [0; -delta_thd];
 ocp.constraints.ubx       = [vx_thd; delta_thd];
 
 % Bounds on steering rate input: d_delta
-ocp.constraints.idxbu     = 0;  % only one input
-ocp.constraints.lbu       = -d_delta_thd;
-ocp.constraints.ubu       =  d_delta_thd;
+ocp.constraints.idxbu     = [0,1];  % only one input
+ocp.constraints.lbu       = [-d_delta_thd,-par.mass*par.g];
+ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
 % Obstacle constraint
-Xobs = 60;    % Obstacle X
-Yobs = 1;     % Obstacle Y
-R    = 5;     % Min radius from obstacle
+Xobs = [20;21;30];    % Obstacle X
+Yobs = [7;7;7];  % Obstacle Y
+R    = 1;     % Min radius from obstacle
+theta = [0;0;0.2];
+a = [4.8;4.8;4.8]; % minor-axis
+b = [1.84;1.84;1.84]; % major-axis
 
-h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
+n_obs = length(Xobs);
+obstacle = [Xobs,Yobs,a,b,theta];
+
+x = model.x(2);
+y = model.x(3);
+
+% Translate point so that obstacle center is at origin
+dx = x - Xobs;
+dy = y - Yobs;
+
+% Rotate by theta to align ellipse with axes in its local frame
+cos_t = cos(theta);
+sin_t = sin(theta);
+
+x_rot =  dx.*cos_t + dy.*sin_t;
+y_rot =  dx.*sin_t - dy.*cos_t;
+
+% Ellipse constraint: h_obs >= 0 means "outside the ellipse"
+h_obs = (x_rot.^2)./(a.^2) + (y_rot.^2)./(b.^2) - 1;
+% h_obs = (model.x(2) - Xobs)^2 + (model.x(3) - Yobs)^2 - R^2;
 
 % Nonlinear constraints: h >= 0
 h = [h_obs];
@@ -103,16 +136,16 @@ ocp.model.con_h_expr   = h;
 ocp.model.con_h_expr_0 = h;
 
 Inf_val = get_acados_infty();
-ocp.constraints.lh    = 0;
-ocp.constraints.uh    = Inf_val;
-ocp.constraints.lh_0  = 0;
-ocp.constraints.uh_0  = Inf_val;
+ocp.constraints.lh    = zeros(n_obs,1);
+ocp.constraints.uh    = ones(n_obs,1)*Inf_val;
+ocp.constraints.lh_0  = zeros(n_obs,1);
+ocp.constraints.uh_0  = ones(n_obs,1)*Inf_val;
 
 % Slack variables (soft constraints)
-ocp.constraints.idxsh    = 0;
-ocp.constraints.idxsh_0  = 0;
-ns                       = 1;
-slack_penalty            = 1e9;
+ocp.constraints.idxsh    = 0:n_obs-1;
+ocp.constraints.idxsh_0  = 0:n_obs-1;
+ns                       = n_obs;
+slack_penalty            = 1e12;
 
 ocp.cost.Zl_0 = slack_penalty * ones(ns,1);
 ocp.cost.Zu_0 = slack_penalty * ones(ns,1);
@@ -156,20 +189,24 @@ u_traj_init = zeros(nu, N);
 
 ocp_solver.set('constr_x0', x0);
 
-% Build a reference path for initialization
-t = Ts * (0:N);
-[~, x_init, y_init] = reference_real_time(par.V0, t);
-if length(x_init) == 1, x_init = repmat(x_init, 1, N+1); end
-if length(y_init) == 1, y_init = repmat(y_init, 1, N+1); end
+% Allocate matrix for states
+x_init = zeros(nx, N);
 
-x_traj_init = reshape([repmat(par.V0,1,N+1);
-                       x_init;
-                       y_init;
-                       zeros(4,N+1)],1,[]);
+for k = 1 : N
+    x_init(1,k) = par.V0;         % vx
+    x_init(2,k) = path.x(k);      % Xp
+    x_init(3,k) = path.y(k);      % Yp
+    x_init(4,k) = 0.0;            % vy
+    x_init(5,k) = 0.0;            % yaw
+    x_init(6,k) = 0.0;            % r
+    x_init(7,k) = 0.0;            % delta
+end
 
-ocp_solver.set('init_x', x_traj_init);
-ocp_solver.set('init_u', u_traj_init);
-ocp_solver.set('init_pi', zeros(nx, N));
+% Now flatten or keep as (nx, N). The Acados OCP solver expects
+% a single vector of dimension nx*N. We can reshape accordingly:
+x_init = reshape(x_init, nx*N, 1);
+
+ocp_solver.set('init_x', [x0;x_init]);
 
 
 %% ========================================================================
@@ -212,7 +249,7 @@ vehicle_4dof.mR0 = par.m_r;
 %  4) SIMULATION
 % ========================================================================
 % Simulation length
-N_sim       = 10 / Ts;   % 10-second simulation
+N_sim       = length(path.x)-50;   % 10-second simulation
 x_sim       = zeros(nx, N_sim+1);
 x_sim(:,1)  = x0;
 u_sim       = zeros(nu, N_sim);
@@ -229,15 +266,7 @@ for i = 1 : N_sim
     ocp_solver.set('init_x', reshape(ocp_solver.get('x'),1,[]));
     ocp_solver.set('init_u', reshape(ocp_solver.get('u'),1,[]));
 
-    % Rebuild references for horizon
-    tN    = 0 : Ts : (N)*Ts;
-    shift = (i-1)*Ts;
-    t_hor = shift + tN;
-    [~, x_ref_hor, y_ref_hor] = reference_real_time(par.V0, t_hor);
-    if length(x_ref_hor)==1, x_ref_hor = repmat(x_ref_hor,1,N+1); end
-    if length(y_ref_hor)==1, y_ref_hor = repmat(y_ref_hor,1,N+1); end
-
-    % closest_idx = findClosestIndex(x_sim(2,i), x_sim(3,i), path);
+    closest_idx = findClosestIndex(x_sim(2,i), x_sim(3,i), path);
 
     % Set path references
     for k = 0 : N-1
@@ -247,11 +276,8 @@ for i = 1 : N_sim
 
         yref_stage      = zeros(nx+nu, 1);
         yref_stage(1)   = par.V0;       % vx reference
-        % yref_stage(2)   = path.x(ref_idx);
-        % yref_stage(3)   = path.y(ref_idx);
-
-        yref_stage(2)   = x_ref_hor(k+1);
-        yref_stage(3)   = y_ref_hor(k+1);
+        yref_stage(2)   = path.x(ref_idx);
+        yref_stage(3)   = path.y(ref_idx);
 
         ocp_solver.set('cost_y_ref', yref_stage, k);
     end
@@ -261,9 +287,6 @@ for i = 1 : N_sim
     ref_idx_e  = min(ref_idx_e, length(path.x));
     yref_stage_e = [par.V0; path.x(ref_idx_e); path.y(ref_idx_e); 0; 0; 0; 0];
     ocp_solver.set('cost_y_ref_e', yref_stage_e);
-
-    % yref_stage_e = [par.V0; x_ref_hor(N+1); y_ref_hor(N+1); 0; 0; 0; 0];
-    % ocp_solver.set('cost_y_ref_e', yref_stage_e);
 
     % Solve OCP
     ocp_solver.solve();
@@ -338,16 +361,14 @@ end
 %  5) PLOTTING
 % ========================================================================
 t_sim       = 0 : Ts : (N_sim * Ts);
-y_ref       = zeros(nx, N_sim+1);
-y_ref(1, :) = par.V0;
-[~, y_ref(2,:), ~] = reference_real_time(par.V0, t_sim);
-y_ref(3, 2:end) = zeros(1, N_sim);
 
 figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-% plot(y_ref(2,:), y_ref(3,:), 'r--', 'DisplayName','Reference');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-viscircles([Xobs, Yobs], R, 'Color','k');
+% plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+plotEllipses(obstacle)
+% viscircles([Xobs, Yobs], R, 'Color','k');
+
 xlabel('X [m]'); ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference');
 legend; grid on;
@@ -376,4 +397,34 @@ function idx = findClosestIndex(curX, curY, path)
 % findClosestIndex: returns the index in path.x,path.y that is closest to (curX, curY).
     dist_array = (path.x - curX).^2 + (path.y - curY).^2;
     [~, idx]   = min(dist_array);
+end
+
+function plotEllipses(obstacles)
+    % PLOTELLIPSES Plots ellipses defined in the obstacles array.
+    % Input:
+    %   obstacles: A matrix where each row defines an ellipse with the format
+    %              [x_center, y_center, semi_major, semi_minor, rotation_angle]
+    
+    for i = 1:size(obstacles, 1)
+        % Extract ellipse parameters
+        xCenter = obstacles(i, 1);
+        yCenter = obstacles(i, 2);
+        a = obstacles(i, 3); % Semi-major axis
+        b = obstacles(i, 4); % Semi-minor axis
+        theta = obstacles(i, 5); % Rotation angle in radians
+
+        % Generate ellipse points
+        t = linspace(0, 2*pi, 100); % Parameter for ellipse points
+        x = a * cos(t); % X-coordinates in the ellipse frame
+        y = b * sin(t); % Y-coordinates in the ellipse frame
+
+        % Rotate and translate ellipse points
+        R = [cos(theta), -sin(theta); sin(theta), cos(theta)]; % Rotation matrix
+        ellipsePoints = R * [x; y]; % Apply rotation
+        xWorld = ellipsePoints(1, :) + xCenter; % Translate x-coordinates
+        yWorld = ellipsePoints(2, :) + yCenter; % Translate y-coordinates
+
+        % Plot the ellipse
+        fill(xWorld, yWorld, 'r', 'FaceAlpha', 0.5, 'EdgeColor', 'none'); % Transparent red ellipse
+    end
 end
