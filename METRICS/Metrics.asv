@@ -1,0 +1,121 @@
+nCase = size(data,1);
+nScenarios = size(data,2);
+Metrics = struct();
+%First step is calculating the clearence of the paths
+for icase = 1:nCase
+    for j = 1:nScenarios
+        route = data(icase,j);
+        clearances = [];
+        collision = 0;
+        %Calculating the 
+        for point = 1:length(route)
+            [minDistance,nEllipse] = minDistanceToEllipses(point, scenario.obstacles);
+            if isPointInEllipse(route(point,2:3),scenario.obstacles(nEllipse,:))
+                collision = collision + 1;
+                clearances(point) = -minDistance;
+            else
+                clearances(point) = minDistance;
+            end
+        end 
+        Metrics(icase,j).collisions = collision
+        Metrics(icase,j).clearances
+    end
+end
+
+
+
+
+
+function isInside = isPointInEllipse(point, ellipse)
+    % ISPOINTINELLIPSE Checks if a point is inside an ellipse.
+    %
+    % Inputs:
+    %   point  - A 1x2 vector [x, y] representing the point.
+    %   ellipse - A 1x5 vector [x_center, y_center, semi_major, semi_minor, rotation_angle]
+    %             representing the ellipse parameters.
+    %
+    % Output:
+    %   isInside - Boolean, true if the point is inside the ellipse, false otherwise.
+
+    % Extract ellipse parameters
+    xCenter = ellipse(1);
+    yCenter = ellipse(2);
+    a = ellipse(3); % Semi-major axis
+    b = ellipse(4); % Semi-minor axis
+    theta = ellipse(5); % Rotation angle in radians
+
+    % Translate the point to the ellipse's center
+    translatedPoint = point - [xCenter, yCenter];
+
+    % Rotate the point to align with the ellipse's axes
+    R = [cos(theta), sin(theta); -sin(theta), cos(theta)];
+    rotatedPoint = R * translatedPoint';
+
+    % Evaluate the point in the ellipse's normalized equation
+    xNorm = rotatedPoint(1) / a;
+    yNorm = rotatedPoint(2) / b;
+    value = xNorm^2 + yNorm^2;
+
+    % Check if the value is less than or equal to 1 (inside the ellipse)
+    isInside = value <= 1;
+end
+
+function [minDistance,nEllipse] = minDistanceToEllipses(point, ellipseSet)
+    % MINDISTANCETOELLIPSES Calculates the minimum distance from a point to a set of ellipses.
+    %
+    % Inputs:
+    %   point      - A 1x2 vector [x, y] representing the point.
+    %   ellipseSet - A Nx5 matrix, where each row represents an ellipse with the format
+    %                [x_center, y_center, semi_major, semi_minor, rotation_angle].
+    %
+    % Output:
+    %   minDistance - The smallest distance from the point to the set of ellipses.
+
+    % Initialize the minimum distance to infinity
+    minDistance = Inf;
+
+    % Loop through each ellipse in the set
+    for i = 1:size(ellipseSet, 1)
+        % Extract the current ellipse
+        ellipse = ellipseSet(i, :);
+
+        % Calculate the distance from the point to the ellipse
+        distance = pointToEllipseDistance(point, ellipse);
+
+        % Update the minimum distance
+        if distance < minDistance
+            minDistance = distance;
+            nEllipse = i;
+        end
+    end
+end
+
+function distance = pointToEllipseDistance(point, ellipse)
+    % POINTTOELLIPSEDISTANCE Calculates the minimum distance from a point to an ellipse.
+    %
+    % Inputs:
+    %   point   - A 1x2 vector [x, y] representing the point.
+    %   ellipse - A 1x5 vector [x_center, y_center, semi_major, semi_minor, rotation_angle].
+    %
+    % Output:
+    %   distance - The shortest distance from the point to the ellipse's perimeter.
+
+    % Extract ellipse parameters
+    xCenter = ellipse(1);
+    yCenter = ellipse(2);
+    a = ellipse(3);
+    b = ellipse(4);
+    theta = ellipse(5);
+
+    % Translate and rotate the point into the ellipse's local coordinate frame
+    translatedPoint = point - [xCenter, yCenter];
+    R = [cos(theta), sin(theta); -sin(theta), cos(theta)];
+    localPoint = R * translatedPoint';
+
+    % Solve for the closest point on the ellipse numerically
+    t = linspace(0, 2*pi, 360); % Fine sampling for the ellipse perimeter
+    ellipseX = a * cos(t);
+    ellipseY = b * sin(t);
+    distances = sqrt((ellipseX - localPoint(1)).^2 + (ellipseY - localPoint(2)).^2);
+    distance = min(distances); % Closest distance to the ellipse perimeter
+end

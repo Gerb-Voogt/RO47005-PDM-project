@@ -31,19 +31,19 @@ for icase = 1:nCases
         switch icase
             case 1
                 nObstacles = 0;
-                roadCenterlineY = zeros(1,10000);
+                roadCenterlineY = roadWidth / 2*ones(1,10000);
             case 2
                 nObstacles = 0;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
             case 3
                 nObstacles = 1;
-                roadCenterlineY = zeros(1,10000);
+                roadCenterlineY = roadWidth / 2*ones(1,10000);
             case 4
                 nObstacles = 1;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
             case 5
                 nObstacles = randi([nObstmin,nObstmax]);
-                roadCenterlineY = zeros(1,10000);
+                roadCenterlineY = roadWidth / 2*ones(1,10000);
             case 6
                 nObstacles = randi([nObstmin,nObstmax]);
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
