@@ -3,7 +3,6 @@
 % ========================================================================
 clear all; clc; close all;
 import casadi.*
-addpath('D:\TU_Delft\Master\PDM\RO47005-PDM-project\SETUP');
 
 % Check requirements for acados
 check_acados_requirements()
@@ -12,13 +11,13 @@ check_acados_requirements()
 veh_parameters
 
 %Load reference path
-load TestPath.mat
+data = load('SETUP\TestPath.mat'); 
 load index
 icase = index.icase;
 j = index.j;
 
-path.x = scenarios(icase,j).roadCenterline(:,1);
-path.y = scenarios(icase,j).roadCenterline(:,2);
+path.x = data.scenarios(icase,j).roadCenterline(:,1);
+path.y = data.scenarios(icase,j).roadCenterline(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
@@ -96,9 +95,9 @@ ocp.constraints.lbu       = [-d_delta_thd,-par.mass*par.g];
 ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
 %% Obstacles
-if scenarios(icase,j).obstacles ~= 0
+if data.scenarios(icase,j).obstacles ~= 0
 
-    jobstacles = scenarios(icase,j).obstacles;
+    jobstacles = data.scenarios(icase,j).obstacles;
     
     Xobs = jobstacles(:,1);
     Yobs = jobstacles(:,2);
@@ -238,7 +237,7 @@ figure(j); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-if scenarios(icase,j).obstacles ~= 0
+if data.scenarios(icase,j).obstacles ~= 0
     plotEllipses(jobstacles)
 end
 % viscircles([Xobs, Yobs], R, 'Color','k');

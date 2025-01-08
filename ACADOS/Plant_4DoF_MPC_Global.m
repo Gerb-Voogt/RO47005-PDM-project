@@ -11,18 +11,18 @@ check_acados_requirements()
 veh_parameters
 
 % Load scenario + case
-load TestPath.mat
+data = load('TestPath.mat');
 load index
 icase = index.icase;
 j = index.j;
 
-path.x = scenarios(icase,j).roadOptimalReference(:,1);
-path.y = scenarios(icase,j).roadOptimalReference(:,2);
+path.x = data.scenarios(icase,j).roadOptimalReference(:,1);
+path.y = data.scenarios(icase,j).roadOptimalReference(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
-Ts   = 0.05;
-N    = 50;               % Prediction horizon
+Ts   = 0.1;
+N    = 30;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
 TSPAN = 0 : Ts/resol : Ts;
@@ -48,12 +48,12 @@ ocp.model = model;
 w_vx     = 1e-3;
 w_Xp     = 1e1;
 w_Yp     = 1e1;
-w_vy     = 1e-3;
+w_vy     = 0e-2;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
-w_delta  = 1e1;
+w_delta  = 0e1;
 
-w_d_delta= 1e-1;
+w_d_delta= 1e1;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
@@ -102,9 +102,9 @@ ocp.constraints.ubu       = [d_delta_thd,par.mass*par.g];
 
 
 %% Obstacles
-if scenarios(icase,j).obstacles ~= 0
+if data.scenarios(icase,j).obstacles ~= 0
 
-    jobstacles = scenarios(icase,j).obstacles;
+    jobstacles = data.scenarios(icase,j).obstacles;
     
     Xobs = jobstacles(:,1);
     Yobs = jobstacles(:,2);
@@ -371,7 +371,7 @@ figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
 plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-if scenarios(icase,j).obstacles ~= 0
+if data.scenarios(icase,j).obstacles ~= 0
     plotEllipses(jobstacles)
 end
 % viscircles([Xobs, Yobs], R, 'Color','k');
