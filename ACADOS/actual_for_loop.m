@@ -47,7 +47,11 @@ for j = 1:4 %size(scenarios,2)
         save('TestPath.mat',data)
         
         Plant_4DoF_glob_MPC % Ik zat dan zoiets te denken
-    
+
+        u = [zeros(2,1), u_sim];     % because no input at initial timestep
+        sol_time = [0, sol_time];    % because no solve time at initial timestep
+        sol_stat = [0, sol_stat];    % because no solve status at initial timestep
+
         % Hoe willen we de tijd voor het bepalen van global path meenemen? 
         data.scenarios(icase,j).outputGlobalMPC = [t_sim', x_sim', u', sol_time', sol_stat'];
         save('TestPath.mat',data)
@@ -61,6 +65,10 @@ for j = 1:4 %size(scenarios,2)
         save('TestPath.mat',data)
         
         Plant_4DoF_MPC_MotionPrim
+
+        u = [zeros(2,1), u_sim];     % because no input at initial timestep
+        sol_time = [0, sol_time];    % because no solve time at initial timestep
+        sol_stat = [0, sol_stat];    % because no solve status at initial timestep
     
         % Hoe willen we de tijd voor het bepalen van global path meenemen? 
         data.scenarios(icase,j).outputMotionPrimitives = [t_sim', x_sim', u', sol_time', sol_stat'];
