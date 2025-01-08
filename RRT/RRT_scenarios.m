@@ -10,6 +10,7 @@ clc; clear; close all;
 icase = 4; 
 number_of_scenarios = 10;
 
+
 if number_of_scenarios == 0
     disp("Number of scenarios per case must be > 1!");
     exit;
@@ -29,3 +30,5 @@ for icase = 1:6
         scenarios(icase, scenario_idx).statistics.best_path_found = bestPathFound; % Whether a Path was found or not
     end
 end
+
+save output_data_rrt scenarios
