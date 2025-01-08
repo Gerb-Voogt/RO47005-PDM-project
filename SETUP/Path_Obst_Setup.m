@@ -17,6 +17,7 @@ stepNumber = round(v_0 * Ts / stepSize);
 stepSize = v_0 * Ts / stepNumber;
 stepNumber = stepNumber * step_multiplier;
 
+rng(9)
 %% Vehicle MPC parameters (for spacing)
 % 
 scenarios = struct();
