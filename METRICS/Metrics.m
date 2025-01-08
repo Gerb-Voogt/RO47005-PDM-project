@@ -1,29 +1,42 @@
+dataFilePath = '../ACADOS/output_data.mat'; % Relative path to the .mat file
+load(dataFilePath);
 nCase = size(scenarios,1);
-nScenarios = size(scenarios,2);
+nScenarios = 4 ;%size(scenarios,2);
 roadLength = 300;
-%First step is calculating the clearence of the paths
-for icase = 1:nCase
+%Ranging over all cases and scenarios
+for icase = 4 %1:nCase
     for j = 1:nScenarios
-        endindex = find(scenarios(icase,j).data(:,2)>roadLength,1);
-        route = scenarios(icase,j).data(1:endindex-1,1:3);%adjust to where t, x and y is in data
+        %Define the path in between 0 and roadlength and select x an y 
+        endindex = find(scenarios(icase,j).output_loc(3,:)>roadLength,1);
+        route = scenarios(icase,j).output_loc(3:4,1:endindex);%adjust to where t, x and y is in data
+         
+        %Calculating the clearances and collisions
         clearances = [];
         collision = 0;
-        pathLength = 0;
-        %Calculating the 
         for ipoint = 1:length(route)
-            point = route(ipoint,:);
-            [minDistance,nEllipse] = minDistanceToEllipses(point, scenario.obstacles);
-            if isPointInEllipse(route(point,2:3),scenario.obstacles(nEllipse,:))
+            
+            [minDistance,nEllipse] = minDistanceToEllipses(point, scenarios(icase,j).obstacles);
+            if isPointInEllipse(point,scenarios(icase,j).obstacles(nEllipse,:))
                 collision = collision + 1;
-                clearances(point) = -minDistance;
+                clearances(ipoint) = -minDistance;
             else
-                clearances(point) = minDistance;
+                clearances(ipoint) = minDistance;
             end
         end 
+
+        path_length = 0;
+        for ipoint = 2:length(route)
+            point_old = route(:,ipoint-1);
+            point_new = route(:,ipoint);
+            dist = (sum((point_new-point_old).^2))^0.5;
+            path_length = path_length + dist;
+        end
+
         scenarios(icase,j).metrics.collisions = collision;
         scenarios(icase,j).metrics.clearances = clearances;
-        scenarios(icase,j).metrics.collisions = collision;
-
+        scenarios(icase,j).metrics.time_to_goal = scenarios(icase,j).output_loc(1,1:endindex);
+        scenarios(icase,j).metrics.path_length = path_length;
+        scenarios(icase,j).metrics.solver_time = scenarios(icase,j).output_loc(10,1:endindex);
     end
 end
 
