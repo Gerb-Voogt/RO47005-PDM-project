@@ -1,18 +1,18 @@
-save_scenarios = false;
+save_scenarios = true;
 
 roadWidth = 2; % Width of the road
 stepSize = 1; % Step size for motion primitives
 roadLength = 300;
 minObstDist = 2;
 stepNumber = 100;
-nScenarios = 2;
+nScenarios = 10;
 nCases = 6;
 step_multiplier = 10;
 nObstmin = 4;
 nObstmax = 10;
 
 v_0 = 50/3.6;
-Ts = 0.1;
+Ts = 0.05;
 stepNumber = round(v_0 * Ts / stepSize);
 stepSize = v_0 * Ts / stepNumber;
 stepNumber = stepNumber * step_multiplier;
