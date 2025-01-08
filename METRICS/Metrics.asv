@@ -1,12 +1,12 @@
-nCase = size(data,1);
-nScenarios = size(data,2);
-Metrics = struct();
+nCase = size(scenarios,1);
+nScenarios = size(scenarios,2);
 %First step is calculating the clearence of the paths
 for icase = 1:nCase
     for j = 1:nScenarios
-        route = data(icase,j);
+        route = scenarios.data(icase,j);
         clearances = [];
         collision = 0;
+        pathLength = 0;
         %Calculating the 
         for point = 1:length(route)
             [minDistance,nEllipse] = minDistanceToEllipses(point, scenario.obstacles);
@@ -17,8 +17,9 @@ for icase = 1:nCase
                 clearances(point) = minDistance;
             end
         end 
-        Metrics(icase,j).collisions = collision
-        Metrics(icase,j).clearances
+        scenarios(icase,j).metrics.collisions = collision;
+        scenarios(icase,j).metrics.clearances = clearances;
+
     end
 end
 

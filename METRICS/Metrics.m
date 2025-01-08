@@ -1,12 +1,17 @@
-scenarios 
+nCase = size(scenarios,1);
+nScenarios = size(scenarios,2);
+roadLength = 300;
 %First step is calculating the clearence of the paths
 for icase = 1:nCase
     for j = 1:nScenarios
-        route = data(icase,j);
+        endindex = find(scenarios(icase,j).data(:,2)>roadLength,1);
+        route = scenarios(icase,j).data(1:endindex-1,1:3);%adjust to where t, x and y is in data
         clearances = [];
         collision = 0;
+        pathLength = 0;
         %Calculating the 
-        for point = 1:length(route)
+        for ipoint = 1:length(route)
+            point = route(ipoint,:);
             [minDistance,nEllipse] = minDistanceToEllipses(point, scenario.obstacles);
             if isPointInEllipse(route(point,2:3),scenario.obstacles(nEllipse,:))
                 collision = collision + 1;
@@ -15,8 +20,10 @@ for icase = 1:nCase
                 clearances(point) = minDistance;
             end
         end 
-        metrics(icase,j).collisions = collision;
-        metrics(icase,j).clearances = clearances;
+        scenarios(icase,j).metrics.collisions = collision;
+        scenarios(icase,j).metrics.clearances = clearances;
+        scenarios(icase,j).metrics.collisions = collision;
+
     end
 end
 
