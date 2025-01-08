@@ -6,13 +6,17 @@ roadLength = 300;
 %Ranging over all cases and scenarios
 for icase = 4 %1:nCase
     for j = 1:nScenarios
+        output = scenarios(icase,j).output_loc; % The different outputs for different controllers
+        
         %Define the path in between 0 and roadlength and select x an y 
-        endindex = find(scenarios(icase,j).output_loc(3,:)>roadLength,1);
-        route = scenarios(icase,j).output_loc(3:4,1:endindex);%adjust to where t, x and y is in data
+        endindex = find(output(3,:)>roadLength,1);
+        route = output(3:4,1:endindex);%adjust to where t, x and y is in data
          
         %Calculating the clearances and collisions
         clearances = [];
         collision = 0;
+
+
         for ipoint = 1:length(route)
             
             [minDistance,nEllipse] = minDistanceToEllipses(point, scenarios(icase,j).obstacles);
@@ -34,13 +38,13 @@ for icase = 4 %1:nCase
 
         scenarios(icase,j).metrics.collisions = collision;
         scenarios(icase,j).metrics.clearances = clearances;
-        scenarios(icase,j).metrics.time_to_goal = scenarios(icase,j).output_loc(1,1:endindex);
+        scenarios(icase,j).metrics.time_to_goal = output(1,1:endindex);
         scenarios(icase,j).metrics.path_length = path_length;
-        scenarios(icase,j).metrics.solver_time = scenarios(icase,j).output_loc(10,1:endindex);
+        scenarios(icase,j).metrics.solver_time = output(10,1:endindex);
     end
 end
 
-
+save metrics_data scenarios
 
 
 
