@@ -38,6 +38,7 @@ load('..\SETUP\TestPath.mat');
 %         exit;
 % end
 % Parameters
+
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 roadWidth = 2; % Width of the road
@@ -227,7 +228,7 @@ else
     bestPathFound = false;
 end
 
-n = 10;     % Number of points to extend
+n = 100;     % Number of points to extend
 
 % Original path
 path_resampled = bestDubins(1:10:end, 1:2);

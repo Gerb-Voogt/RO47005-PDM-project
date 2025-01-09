@@ -8,7 +8,7 @@ clc; close all;
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
 
-number_of_scenarios = 3;
+number_of_scenarios = 1;
 
 
 if number_of_scenarios == 0
