@@ -72,7 +72,6 @@ for j = 1:size(data.scenarios,2)
         scenarios(icase, j).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
         scenarios(icase, j).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
 
-        data.scenarios(icase,j).roadMotionPrimitives = [x_sim(2:3,:)'];
         save('SETUP\TestPath.mat','-struct', 'data')
         
         Plant_4DoF_MPC_MotionPrim

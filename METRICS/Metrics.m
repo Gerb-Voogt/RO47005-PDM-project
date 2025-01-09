@@ -1,7 +1,7 @@
 dataFilePath = '../ACADOS/output_data.mat'; % Relative path to the .mat file
 load(dataFilePath);
 nCase = size(scenarios,1);
-nScenarios = 4 ;%size(scenarios,2);
+nScenarios = size(scenarios,2);
 roadLength = 300;
 %Ranging over all cases and scenarios
 for icase = 4 %1:nCase
