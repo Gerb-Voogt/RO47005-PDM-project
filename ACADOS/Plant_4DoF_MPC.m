@@ -48,12 +48,12 @@ ocp.model = model;
 w_vx     = 1e-3;
 w_Xp     = 1e1;
 w_Yp     = 1e1;
-w_vy     = 1e-3;
+w_vy     = 0e-2;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
-w_delta  = 1e1;
+w_delta  = 0e1;
 
-w_d_delta= 1e-1;
+w_d_delta= 1e1;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);

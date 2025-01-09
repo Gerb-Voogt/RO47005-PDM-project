@@ -11,7 +11,12 @@ check_acados_requirements()
 veh_parameters
 
 % Load scenario + case
-data = load('TestPath.mat');
+if exist('SimData.mat', 'file') == 2
+    data = load('SimData.mat');
+else
+    data = load('..\SETUP\TestPath.mat');
+end
+
 load index
 icase = index.icase;
 j = index.j;
@@ -21,7 +26,7 @@ path.y = data.scenarios(icase,j).roadOptimalReference(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
-Ts   = 0.1;
+Ts   = 0.05;
 N    = 30;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps

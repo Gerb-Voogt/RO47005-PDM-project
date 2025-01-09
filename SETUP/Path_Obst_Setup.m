@@ -8,8 +8,8 @@ stepNumber = 100;
 nScenarios = 10;
 nCases = 6;
 step_multiplier = 10;
-nObstmin = 4;
-nObstmax = 10;
+nObstmin = 3;
+nObstmax = 6;
 
 v_0 = 50/3.6;
 Ts = 0.05;

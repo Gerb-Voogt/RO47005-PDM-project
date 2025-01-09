@@ -11,7 +11,12 @@ check_acados_requirements()
 veh_parameters
 
 %Load reference path
-data = load('SETUP\TestPath.mat'); 
+if exist('SimData.mat', 'file') == 2
+    data = load('SimData.mat');
+else
+    data = load('..\SETUP\TestPath.mat');
+end
+
 load index
 icase = index.icase;
 j = index.j;
@@ -21,7 +26,7 @@ path.y = data.scenarios(icase,j).roadCenterline(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
-Ts   = 0.1;
+Ts   = 0.05;
 N    = length(path.x);   % Prediction horizon
 T    = N * Ts;           % Horizon length
 
@@ -233,7 +238,7 @@ x_sim = ocp_solver.get('x');
 % ========================================================================
 t_sim       = 0 : Ts : (N * Ts);
 
-figure(j); clf(1); hold on;
+figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');

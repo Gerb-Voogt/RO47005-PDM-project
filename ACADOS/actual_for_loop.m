@@ -21,22 +21,27 @@ method = "global_MPC";
 index.icase = icase;
 index.method = method;
 
-data = load('SETUP\TestPath.mat');
-
-for j = 1:4 %size(scenarios,2)
+if exist('SimData.mat', 'file') == 2
+    data = load('SimData.mat');
+else
+    data = load('..\SETUP\TestPath.mat');
+end
+    
+for j = 1:size(data.scenarios,2)
     
     index.j = j;
 
     if index.method == "local_MPC"
         save index index
         
+        save('SimData.mat','-struct', 'data')
         Plant_4DoF_MPC
    
         u = [zeros(2,1), u_sim];     % because no input at initial timestep
         sol_time = [0, sol_time];    % because no solve time at initial timestep
         sol_stat = [0, sol_stat];    % because no solve status at initial timestep
         data.scenarios(icase,j).outputLocalMPC = [t_sim', x_sim', u', sol_time', sol_stat'];
-        save('TestPath.mat','-struct', 'data')
+        save('SimData.mat','-struct', 'data')
 
     elseif index.method == "global_MPC"
         save index index
@@ -44,7 +49,7 @@ for j = 1:4 %size(scenarios,2)
         ReferenceOptimization
 
         data.scenarios(icase,j).roadOptimalReference = [x_sim(2:3,:)'];
-        save('TestPath.mat','-struct', 'data')
+        save('SimData.mat','-struct', 'data')
         
         Plant_4DoF_MPC_Global % Ik zat dan zoiets te denken
 
@@ -54,7 +59,7 @@ for j = 1:4 %size(scenarios,2)
 
         % Hoe willen we de tijd voor het bepalen van global path meenemen? 
         data.scenarios(icase,j).outputGlobalMPC = [t_sim', x_sim', u', sol_time', sol_stat'];
-        save('TestPath.mat','-struct', 'data')
+        save('SimData.mat','-struct', 'data')
 
     elseif index.method == "RRT"
         save index index
@@ -62,7 +67,7 @@ for j = 1:4 %size(scenarios,2)
         RRT bestand
 
         data.scenarios(icase,j).roadMotionPrimitives = [x_sim(2:3,:)'];
-        save('TestPath.mat','-struct', 'data')
+        save('SETUP\TestPath.mat','-struct', 'data')
         
         Plant_4DoF_MPC_MotionPrim
 
@@ -72,7 +77,7 @@ for j = 1:4 %size(scenarios,2)
     
         % Hoe willen we de tijd voor het bepalen van global path meenemen? 
         data.scenarios(icase,j).outputMotionPrimitives = [t_sim', x_sim', u', sol_time', sol_stat'];
-        save('TestPath.mat','-struct', 'data')
+        save('SETUP\TestPath.mat','-struct', 'data')
     end
 
 end
