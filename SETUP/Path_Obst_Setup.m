@@ -76,7 +76,7 @@ for icase = 1:nCases
 end
 
 if save_scenarios
-save('TestPath.mat','scenarios')
+save('..\SETUP\TestPath.mat','scenarios')
 end
 
 function obstacles = defineObstacles(n,roadCenterlineX,roadCenterlineY,roadWidth,start,goal,min_obst_dist)

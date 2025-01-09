@@ -11,7 +11,12 @@ check_acados_requirements()
 veh_parameters
 
 % Load scenario + case
-data = load('TestPath.mat');
+if exist('SimData.mat', 'file') == 2
+    data = load('SimData.mat');
+else
+    data = load('..\SETUP\TestPath.mat');
+end
+
 load index
 icase = index.icase;
 j = index.j;

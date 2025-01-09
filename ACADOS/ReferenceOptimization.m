@@ -11,7 +11,12 @@ check_acados_requirements()
 veh_parameters
 
 %Load reference path
-data = load('SETUP\TestPath.mat'); 
+if exist('SimData.mat', 'file') == 2
+    data = load('SimData.mat');
+else
+    data = load('..\SETUP\TestPath.mat');
+end
+
 load index
 icase = index.icase;
 j = index.j;
@@ -233,7 +238,7 @@ x_sim = ocp_solver.get('x');
 % ========================================================================
 t_sim       = 0 : Ts : (N * Ts);
 
-figure(j); clf(1); hold on;
+figure(1); clf(1); hold on;
 plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
