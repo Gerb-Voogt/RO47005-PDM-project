@@ -6,42 +6,40 @@ plot_result = false;
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-icase = 3; %
-j = 2;
+
 load('..\SETUP\TestPath.mat')
 
-% switch icase
-%     case 1
-%         nObstacles = 0;
-%         road_type = "straight";
-%     case 2
-%         nObstacles = 0;
-%         road_type = "sinusoidal";
-%         amplitude = 1;
-%         phase = 1;
-%     case 3
-%         nObstacles = 1;
-%         road_type = "straight";
-%     case 4
-%         nObstacles = 1;
-%         road_type = "sinusoidal";
-%         amplitude = 1;
-%         phase = 1;
-%     case 5
-%         nObstacles = 8;
-%         road_type = "straight";
-%     case 6
-%         nObstacles = 8;
-%         road_type = "sinusoidal";
-%         amplitude = 1;
-%         phase = 1;
-%     otherwise
-%         disp("Case Number should be in {1, 2, ..., 6}");
-%         exit;
-% end
+switch icase
+    case 1
+        nObstacles = 0;
+        road_type = "straight";
+    case 2
+        nObstacles = 0;
+        road_type = "sinusoidal";
+        amplitude = 1;
+        phase = 1;
+    case 3
+        nObstacles = 1;
+        road_type = "straight";
+    case 4
+        nObstacles = 1;
+        road_type = "sinusoidal";
+        amplitude = 1;
+        phase = 1;
+    case 5
+        nObstacles = 8;
+        road_type = "straight";
+    case 6
+        nObstacles = 8;
+        road_type = "sinusoidal";
+        amplitude = 1;
+        phase = 1;
+    otherwise
+        disp("Case Number should be in {1, 2, ..., 6}");
+        exit;
+end
 % Parameters
-roadCenterlineX = scenarios
-roadWidth = 2; % Width of the road
+%roadWidth = 2; % Width of the road
 maxIterations = 5000; % Max iterations for the RRT
 carRadius = 6; % Car turning radius constraint
 goalRegion = 0.4*roadWidth;
