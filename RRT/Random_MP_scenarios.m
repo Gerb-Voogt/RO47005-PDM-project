@@ -1,13 +1,11 @@
 tic % Start the timer
-plot_result = false;
+plot_result = true;
 % 1 - straight line no obstacles
 % 2 - sine wave no obstacles
 % 3 - straight line 1 obstacle
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-icase = 6; %
-j = 2;
 load('..\SETUP\TestPath.mat');
 
 % switch icase
@@ -43,9 +41,9 @@ load('..\SETUP\TestPath.mat');
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 roadWidth = 2; % Width of the road
-maxIterations = 5000; % Max iterations for the RRT
+maxIterations = 10000; % Max iterations for the RRT
 carRadius = 6; % Car turning radius constraint
-goalRegion = 0.4*roadWidth;
+goalRegion = roadWidth/2;
 stepSize = 1; % Step size for motion primitives
 roadLength = roadCenterlineX(end)/2;
 %minObstDist = 2;
@@ -112,7 +110,7 @@ if plot_result
     figure;
     hold on;
     xlim([0, roadLength]);
-    ylim([roadCenterlineY(1)-roadWidth, roadCenterlineY(end)+roadWidth]); % Adjust Y-limits based on roadWidth
+    ylim([min(roadCenterlineY)-0.75*roadWidth,max(roadCenterlineY)+0.75*roadWidth])
     % Plot the road with sinusoidal boundaries
     fill([roadCenterlineX, fliplr(roadCenterlineX)], ...
          [roadCenterlineY + roadWidth / 2, fliplr(roadCenterlineY - roadWidth / 2)], ...
@@ -231,11 +229,11 @@ end
 
 path_resampled = bestDubins(1:10:end, 1:2);
 
-distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
-distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
-
-distances_road = sqrt(diff(roadCenterlineX).^2 + diff(roadCenterlineY).^2);
-resampledRoad = [roadCenterlineX(:), roadCenterlineY(:)];
+% distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
+% distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
+% 
+% distances_road = sqrt(diff(roadCenterlineX).^2 + diff(roadCenterlineY).^2);
+% resampledRoad = [roadCenterlineX(:), roadCenterlineY(:)];
 
 
 % Helper function: Apply motion primitive

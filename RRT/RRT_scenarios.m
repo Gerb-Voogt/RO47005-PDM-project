@@ -7,8 +7,8 @@ clc; close all;
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-icase = 4; 
-number_of_scenarios = 10;
+
+number_of_scenarios = 3;
 
 
 if number_of_scenarios == 0
@@ -18,16 +18,14 @@ end
 
 
 for icase = 1:6
-    for scenario_idx = 1:number_of_scenarios
+    for j = 1:number_of_scenarios
         Random_MP_scenarios;
 
         %% Save the scenario data
-        scenarios(icase, scenario_idx).roadCenterLine = [roadCenterlineX', roadCenterlineY']; % road centerline x, road centerline y
-        scenarios(icase, scenario_idx).obstacles = obstacles; % Obstacles used for scenario
-        scenarios(icase, scenario_idx).roadMotionPrimitives = [bestDubins(:,1), bestDubins(:,2), bestDubins(:,3)]; % X, Y, Yaw
-        scenarios(icase, scenario_idx).solstatMotionPrimitives.solver_time = solver_time; % Solver time spent
-        scenarios(icase, scenario_idx).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
-        scenarios(icase, scenario_idx).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
+        scenarios(icase, j).roadMotionPrimitives = [path_resampled(:,1), path_resampled(:,2)]; % X, Y
+        scenarios(icase, j).solstatMotionPrimitives.solver_time = solver_time; % Solver time spent
+        scenarios(icase, j).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
+        scenarios(icase, j).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
     end
 end
 
