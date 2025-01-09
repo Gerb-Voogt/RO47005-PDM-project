@@ -64,7 +64,13 @@ for j = 1:size(data.scenarios,2)
     elseif index.method == "RRT"
         save index index
         
-        RRT bestand
+        Random_MP_scenarios;
+
+        %% Save the scenario data
+        scenarios(icase, j).roadMotionPrimitives = [path_resampled(:,1), path_resampled(:,2)]; % X, Y
+        scenarios(icase, j).solstatMotionPrimitives.solver_time = solver_time; % Solver time spent
+        scenarios(icase, j).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
+        scenarios(icase, j).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
 
         data.scenarios(icase,j).roadMotionPrimitives = [x_sim(2:3,:)'];
         save('SETUP\TestPath.mat','-struct', 'data')
