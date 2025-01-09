@@ -6,9 +6,9 @@ plot_result = false;
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-icase = 3; %
+icase = 6; %
 j = 2;
-load('..\SETUP\TestPath.mat')
+load('..\SETUP\TestPath.mat');
 
 % switch icase
 %     case 1
@@ -40,13 +40,14 @@ load('..\SETUP\TestPath.mat')
 %         exit;
 % end
 % Parameters
-roadCenterlineX = scenarios
+roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
+roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 roadWidth = 2; % Width of the road
 maxIterations = 5000; % Max iterations for the RRT
 carRadius = 6; % Car turning radius constraint
 goalRegion = 0.4*roadWidth;
 stepSize = 1; % Step size for motion primitives
-%roadLength = 100;
+roadLength = roadCenterlineX(end)/2;
 %minObstDist = 2;
 
 %% Vehicle MPC parameters (for spacing)
@@ -87,25 +88,24 @@ stepNumber = stepNumber * step_multiplier;
 % resampledRoad = [resampledX(:), resampledY(:)];
 
 
-% Plot the results
-if plot_result
-    plot(roadCenterlineX, roadCenterlineY, 'b-', 'DisplayName', 'Original Centerline');
-    hold on;
-    plot(resampledX, resampledY, 'ro-', 'DisplayName', 'Resampled Centerline');
-    % legend;
-    xlabel('X');
-    ylabel('Y');
-    title('Resampled Road Centerline');
-    grid on;
-end
+% % Plot the results
+% if plot_result
+%     plot(roadCenterlineX, roadCenterlineY, 'b-', 'DisplayName', 'Original Centerline');
+%     hold on;
+%     legend;
+%     xlabel('X');
+%     ylabel('Y');
+%     title('Resampled Road Centerline');
+%     grid on;
+% end
 
 
 
 % Define the environment
 % Define the environment
 start = [roadCenterlineX(1), roadCenterlineY(1), 0]; % Start position [x, y, theta]
-goal = [roadCenterlineX(end), roadCenterlineY(end), 0]; % Goal position [x, y, theta]
-obstacles = defineObstacles(nObstacles,roadCenterlineX,roadCenterlineY,roadWidth,start(1:2),goal(1:2),minObstDist);
+goal = [roadCenterlineX(round(end/2)), roadCenterlineY(round(end/2)), 0]; % Goal position [x, y, theta]
+obstacles = scenarios(icase,j).obstacles;
 
 % Visualization setup
 if plot_result
@@ -118,6 +118,7 @@ if plot_result
          [roadCenterlineY + roadWidth / 2, fliplr(roadCenterlineY - roadWidth / 2)], ...
          [0.8, 0.8, 0.8], 'EdgeColor', 'none'); % Road boundaries
     plot(roadCenterlineX, roadCenterlineY, 'k-', 'LineWidth', 2); % Road centerline
+    
     rectangle('Position',[goal(1)-goalRegion,goal(2)-goalRegion,2*goalRegion,2*goalRegion],'Curvature',[1 1],'FaceColor','green');
     plot(start(1), start(2), 'go', 'MarkerSize', 10, 'LineWidth', 2); % Start
     plot(goal(1), goal(2), 'ro', 'MarkerSize', 10, 'LineWidth', 2); % Goal
@@ -181,7 +182,9 @@ test = 1;
                 tree.edges = [tree.edges; nearestIdx, size(tree.vertices, 1)];
                 newCost = tree.cost(nearestIdx) + motionPrimitives(idx, 1);
                 tree.cost = [tree.cost; newCost];
-                plotPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber);
+                if plot_result
+                    plotPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber);
+                end
                 % Plot the motion primitive path
                 
     
@@ -231,8 +234,8 @@ path_resampled = bestDubins(1:10:end, 1:2);
 distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
 distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
 
-distances_road = sqrt(diff(resampledX).^2 + diff(resampledY).^2);
-resampledRoad = [resampledX(:), resampledY(:)];
+distances_road = sqrt(diff(roadCenterlineX).^2 + diff(roadCenterlineY).^2);
+resampledRoad = [roadCenterlineX(:), roadCenterlineY(:)];
 
 
 % Helper function: Apply motion primitive
@@ -328,9 +331,7 @@ end
 % Helper function: Plot the path
 function plotPath(state, primitive, turningRadius, stepNumber)
      path = generateDubinsPath(state, primitive, turningRadius, stepNumber);
-     if plot_result
-        plot(path(:, 1), path(:, 2), 'k-', 'LineWidth', 0.5);
-     end
+     plot(path(:, 1), path(:, 2), 'k-', 'LineWidth', 0.5);
  end
 
 function plotEllipses(obstacles)
@@ -359,9 +360,7 @@ function plotEllipses(obstacles)
         yWorld = ellipsePoints(2, :) + yCenter; % Translate y-coordinates
 
         % Plot the ellipse
-        if plot_result
-            fill(xWorld, yWorld, 'r', 'FaceAlpha', 0.5, 'EdgeColor', 'none'); % Transparent red ellipse
-        end
+        fill(xWorld, yWorld, 'r', 'FaceAlpha', 0.5, 'EdgeColor', 'none'); % Transparent red ellipse
     end
 end
 

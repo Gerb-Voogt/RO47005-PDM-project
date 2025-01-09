@@ -43,10 +43,10 @@ for icase = 1:nCases
                 nObstacles = 1;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
             case 5
-                nObstacles = randi([nObstmin,nObstmax]);
+                nObstacles = 8;
                 roadCenterlineY = roadWidth / 2*ones(1,10000);
             case 6
-                nObstacles = randi([nObstmin,nObstmax]);
+                nObstacles = 8;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
         end
         
@@ -54,7 +54,7 @@ for icase = 1:nCases
         goal = [roadCenterlineX(5000), roadCenterlineY(5000), 0]; % Goal position [x, y, theta]
 
        % Sinusoidal road % New curved road
-        obstacles = defineObstacles(nObstacles,roadCenterlineX,roadCenterlineY,roadWidth,start(1:2),goal(1:2),minObstDist);
+        obstacles = defineObstacles(nObstacles,roadCenterlineX(1:round(end/2)),roadCenterlineY(1:round(end/2)),roadWidth,start(1:2),goal(1:2),minObstDist);
       
         % Calculate the cumulative distance along the road
         dx = diff(roadCenterlineX);
@@ -76,7 +76,7 @@ for icase = 1:nCases
 end
 
 if save_scenarios
-save('TestPath.mat','scenarios')
+save('..\SETUP\TestPath.mat','scenarios')
 end
 
 function obstacles = defineObstacles(n,roadCenterlineX,roadCenterlineY,roadWidth,start,goal,min_obst_dist)
