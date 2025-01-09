@@ -48,6 +48,9 @@ for j = 1:size(data.scenarios,2)
 
         ReferenceOptimization
 
+        scenarios(icase, j).solstatOptimalReference.solver_time = solver_time; % Solver time spent
+        scenarios(icase, j).solstatOptimalReference.solver_status = solver_status; % Whether a Path was found or not
+
         data.scenarios(icase,j).roadOptimalReference = [x_sim(2:3,:)'];
         save('SimData.mat','-struct', 'data')
         

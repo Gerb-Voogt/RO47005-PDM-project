@@ -232,6 +232,8 @@ if status ~= 0
 end
 
 x_sim = ocp_solver.get('x');
+solver_time = ocp_solver.get('time_tot');
+solver_status = ocp_solver.get('status');
 
 %% ========================================================================
 %  4) PLOTTING
