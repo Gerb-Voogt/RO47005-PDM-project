@@ -7,7 +7,7 @@ plot_result = false;
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
 icase = 3; %
-idx = 2;
+j = 2;
 load('..\SETUP\TestPath.mat')
 
 % switch icase
