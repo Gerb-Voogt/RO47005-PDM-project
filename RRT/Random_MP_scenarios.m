@@ -7,7 +7,7 @@ plot_result = false;
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
 icase = 3; %
-j = 2;
+idx = 2;
 load('..\SETUP\TestPath.mat')
 
 % switch icase
@@ -167,21 +167,21 @@ test = 1;
     
         % Apply motion primitives
     
-        for j = 1:size(motionPrimitives, 1)
-            newState = applyMotionPrimitive(nearestVertex, motionPrimitives(j, :), turningRadius);
+        for idx = 1:size(motionPrimitives, 1)
+            newState = applyMotionPrimitive(nearestVertex, motionPrimitives(idx, :), turningRadius);
             
             % Check collision
              if isWithinRoad(newState, roadCenterlineX, roadCenterlineY, roadWidth) && ...
-                ~isCollisionPath(nearestVertex, motionPrimitives(j, :), turningRadius, stepNumber, obstacles)
-                newDubins = generateDubinsPath(nearestVertex, motionPrimitives(j,:), turningRadius, stepNumber);
+                ~isCollisionPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber, obstacles)
+                newDubins = generateDubinsPath(nearestVertex, motionPrimitives(idx,:), turningRadius, stepNumber);
                 % Add new vertex and edge to the tree
                 newDubinsFlat = reshape(newDubins,1,[]);
                 tree.vertices = [tree.vertices; newState];
                 tree.dubins = [tree.dubins;newDubinsFlat];
                 tree.edges = [tree.edges; nearestIdx, size(tree.vertices, 1)];
-                newCost = tree.cost(nearestIdx) + motionPrimitives(j, 1);
+                newCost = tree.cost(nearestIdx) + motionPrimitives(idx, 1);
                 tree.cost = [tree.cost; newCost];
-                plotPath(nearestVertex, motionPrimitives(j, :), turningRadius, stepNumber);
+                plotPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber);
                 % Plot the motion primitive path
                 
     
@@ -308,9 +308,9 @@ function collision = isCollisionPath(state, primitive, turningRadius, stepNumber
         R = [cos(rotation), -sin(rotation); sin(rotation), cos(rotation)];
         
         % Check all points on the path
-        for j = 1:size(path, 1)
+        for idx = 1:size(path, 1)
             % Translate the point to the ellipse's coordinate frame
-            point = path(j, 1:2) - obsCenter;
+            point = path(idx, 1:2) - obsCenter;
             % Rotate the point using the inverse of the ellipse rotation
             pointRotated = R' * point';
             
