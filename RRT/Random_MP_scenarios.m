@@ -227,7 +227,24 @@ else
     bestPathFound = false;
 end
 
+n = 10;     % Number of points to extend
+
+% Original path
 path_resampled = bestDubins(1:10:end, 1:2);
+
+% Get the last point of the path
+last_point = path_resampled(end, :);
+
+% Generate n new points on a horizontal line
+spacing = v_0 * Ts;  % Distance between points
+new_points_x = last_point(1) + (1:n) * spacing;  % Extend in x-direction
+new_points_y = repmat(last_point(2), 1, n);      % Keep y-coordinate constant
+
+% Combine new points
+new_points = [new_points_x(:), new_points_y(:)];
+
+% Extend the path
+path_resampled = [path_resampled; new_points];
 
 % distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
 % distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
