@@ -1,4 +1,4 @@
-save_scenarios = true;
+save_scenarios = false;
 
 roadWidth = 5; % Width of the road
 stepSize = 1; % Step size for motion primitives
