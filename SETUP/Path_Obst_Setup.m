@@ -1,9 +1,9 @@
 save_scenarios = true;
 
-roadWidth = 2; % Width of the road
+roadWidth = 5; % Width of the road
 stepSize = 1; % Step size for motion primitives
 roadLength = 300;
-minObstDist = 2;
+minObstDist = 10;
 stepNumber = 100;
 nScenarios = 10;
 nCases = 6;
@@ -54,7 +54,13 @@ for icase = 1:nCases
         goal = [roadCenterlineX(5000), roadCenterlineY(5000), 0]; % Goal position [x, y, theta]
 
        % Sinusoidal road % New curved road
-        obstacles = defineObstacles(nObstacles,roadCenterlineX(1:round(end/2)),roadCenterlineY(1:round(end/2)),roadWidth,start(1:2),goal(1:2),minObstDist);
+        obstacles = defineObstaclesFixedSize(nObstacles,roadCenterlineX(1:round(end/2)),roadCenterlineY(1:round(end/2)),roadWidth,start(1:2),goal(1:2),minObstDist);
+        figure;  hold on;
+        plotEllipses(obstacles);
+        plot(roadCenterlineX, roadCenterlineY, "Color", [0.5, 0.5, 0.5], "LineStyle", "--");
+        plot(roadCenterlineX, roadCenterlineY+roadWidth, "Color", "k", "LineWidth", 1.5);
+        plot(roadCenterlineX, roadCenterlineY-roadWidth, "Color", "k", "LineWidth", 1.5);
+        xlim([0, 300]);
       
         % Calculate the cumulative distance along the road
         dx = diff(roadCenterlineX);
@@ -97,6 +103,78 @@ function obstacles = defineObstacles(n,roadCenterlineX,roadCenterlineY,roadWidth
         
     end
 end
+
+function obstacles = defineObstaclesFixedSize(n,roadCenterlineX, roadCenterlineY, roadWidth, start, goal, min_obst_dist)
+    %% Round these up for clearance
+    % Car => a = 4.7 m, b = 1.8 m
+    % Truck => a = 13.9 m, b = 2.9 m
+    % Pedestrian => a = 0.41 m, b = 0.41 m % Make pedestrians a circle
+    % 1 = Car
+    % 2 = Truck
+    % 3 = Pedestrian
+    % options = [1, 2, 3];
+    car_width = 1.8; % [m]
+    car_length = 4.7; % [m]
+    truck_width = 2.5; % [m]
+    truck_length = 8.2; % [m]
+    pedestrian_width = 0.5; % [m]
+    pedestrian_length = 0.5; % [m]
+
+    margin = 1;
+
+    % Car Dimensions
+    obstacle_data(1).a = car_length/2 + margin;
+    obstacle_data(1).b = car_width/2 + margin;
+
+    % Truck Dimensions
+    obstacle_data(2).a = truck_length/2 + margin;
+    obstacle_data(2).b = truck_width/2 + margin;
+
+    % Pedestrian Dimensions
+    obstacle_data(3).a = pedestrian_length/2 + margin;
+    obstacle_data(3).b = pedestrian_width/2 + margin;
+    
+    obstacles = zeros(n,5);
+    n_el = 0;
+    path.x = roadCenterlineX;
+    path.y = roadCenterlineX;
+    roadAngles = computeHeadingAnglesRoad(roadCenterlineX, roadCenterlineY);
+
+    if n > 1
+        %% Generate a single car at the edge of the road
+        % Select a random index for a random location along the road
+        random_idx = randi([round(1/4*length(roadCenterlineX)) round(3/4*length(roadCenterlineX))], 1);
+        x = roadCenterlineX(random_idx);
+        y = roadCenterlineY(random_idx) + roadWidth + car_width;
+        theta = roadAngles(random_idx);
+        n_el = n_el + 1;
+        obstacles(n_el,:) = [x, y, obstacle_data(1).a, obstacle_data(1).b, theta];
+    end
+
+    while n_el < n
+        % Select a random obstacle
+        random_idx = randi([1 3], 1); % Generate a random integer from 1 to 3
+        ai = obstacle_data(random_idx).a;
+        bi = obstacle_data(random_idx).b;
+
+        % Sample a random state, find the corresponding heading angle of the road 
+        % at this point. Orient the obstacle such that it has the same heading as the road.
+        randomStatei = sampleRandomState(roadCenterlineX, roadCenterlineY, roadWidth);
+        roadHeadingAngleIdx = findClosestIndex(randomStatei(1), randomStatei(2), path);
+        roadHeadingAngle = roadAngles(roadHeadingAngleIdx);
+        
+        obstaclei = [randomStatei(1),randomStatei(2),ai,bi,roadHeadingAngle];
+        disti = minDistanceToEllipses(randomStatei(1:2), obstacles);
+
+        % If the obstacles overlap, generate a new one.
+        % If the obstacles are too close to one another, we also generate a new one.
+        if ~isPointInEllipse(start,obstaclei) && ~isPointInEllipse(goal,obstaclei) && disti > min_obst_dist 
+            n_el = n_el + 1;
+            obstacles(n_el,:) = obstaclei;
+        end
+    end
+end
+
 
 function randomState = sampleRandomState(roadCenterlineX, roadCenterlineY, roadWidth)
     % Sample a random x-coordinate within the road length
@@ -206,4 +284,46 @@ function isInside = isPointInEllipse(point, ellipse)
 
     % Check if the value is less than or equal to 1 (inside the ellipse)
     isInside = value <= 1;
+end
+
+
+function theta = computeHeadingAnglesRoad(roadCenterlineX, roadCenterlineY)
+    theta = diff(roadCenterlineY)./diff(roadCenterlineX);
+end
+
+function idx = findClosestIndex(curX, curY, path)
+% findClosestIndex: returns the index in path.x,path.y that is closest to (curX, curY).
+    dist_array = (path.x - curX).^2 + (path.y - curY).^2;
+    [~, idx]   = min(dist_array);
+end
+
+
+function plotEllipses(obstacles)
+    % PLOTELLIPSES Plots ellipses defined in the obstacles array.
+    % Input:
+    %   obstacles: A matrix where each row defines an ellipse with the format
+    %              [x_center, y_center, semi_major, semi_minor, rotation_angle]
+    
+    for i = 1:size(obstacles, 1)
+        % Extract ellipse parameters
+        xCenter = obstacles(i, 1);
+        yCenter = obstacles(i, 2);
+        a = obstacles(i, 3); % Semi-major axis
+        b = obstacles(i, 4); % Semi-minor axis
+        theta = obstacles(i, 5); % Rotation angle in radians
+
+        % Generate ellipse points
+        t = linspace(0, 2*pi, 100); % Parameter for ellipse points
+        x = a * cos(t); % X-coordinates in the ellipse frame
+        y = b * sin(t); % Y-coordinates in the ellipse frame
+
+        % Rotate and translate ellipse points
+        R = [cos(theta), -sin(theta); sin(theta), cos(theta)]; % Rotation matrix
+        ellipsePoints = R * [x; y]; % Apply rotation
+        xWorld = ellipsePoints(1, :) + xCenter; % Translate x-coordinates
+        yWorld = ellipsePoints(2, :) + yCenter; % Translate y-coordinates
+
+        % Plot the ellipse
+        fill(xWorld, yWorld, 'r', 'FaceAlpha', 0.5, 'EdgeColor', 'none'); % Transparent red ellipse
+    end
 end
