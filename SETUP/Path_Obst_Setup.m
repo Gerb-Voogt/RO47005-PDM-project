@@ -8,8 +8,6 @@ stepNumber = 100;
 nScenarios = 10;
 nCases = 6;
 step_multiplier = 10;
-nObstmin = 3;
-nObstmax = 6;
 
 v_0 = 50/3.6;
 Ts = 0.05;
@@ -21,7 +19,8 @@ rng(9)
 %% Vehicle MPC parameters (for spacing)
 % 
 scenarios = struct();
-for icase = 1:nCases
+% for icase = 1:nCases
+for icase = 1:6
     for i = 1:nScenarios
         % Define sinusoidal road centerline
         A = rand;
@@ -43,10 +42,10 @@ for icase = 1:nCases
                 nObstacles = 1;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
             case 5
-                nObstacles = 8;
+                nObstacles = 5;
                 roadCenterlineY = roadWidth / 2*ones(1,10000);
             case 6
-                nObstacles = 8;
+                nObstacles = 5;
                 roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); 
         end
         
@@ -82,7 +81,7 @@ for icase = 1:nCases
 end
 
 if save_scenarios
-save('..\SETUP\TestPath.mat','scenarios')
+save('..\SETUP\TestPathFixed.mat','scenarios')
 end
 
 function obstacles = defineObstacles(n,roadCenterlineX,roadCenterlineY,roadWidth,start,goal,min_obst_dist)
@@ -151,6 +150,7 @@ function obstacles = defineObstaclesFixedSize(n,roadCenterlineX, roadCenterlineY
         obstacles(n_el,:) = [x, y, obstacle_data(1).a, obstacle_data(1).b, theta];
     end
 
+
     while n_el < n
         % Select a random obstacle
         random_idx = randi([1 3], 1); % Generate a random integer from 1 to 3
@@ -161,6 +161,7 @@ function obstacles = defineObstaclesFixedSize(n,roadCenterlineX, roadCenterlineY
         % at this point. Orient the obstacle such that it has the same heading as the road.
         randomStatei = sampleRandomState(roadCenterlineX, roadCenterlineY, roadWidth);
         roadHeadingAngleIdx = findClosestIndex(randomStatei(1), randomStatei(2), path);
+        centerlineYCoordinate = roadCenterlineY(roadHeadingAngleIdx);
         roadHeadingAngle = roadAngles(roadHeadingAngleIdx);
         
         obstaclei = [randomStatei(1),randomStatei(2),ai,bi,roadHeadingAngle];
@@ -168,9 +169,16 @@ function obstacles = defineObstaclesFixedSize(n,roadCenterlineX, roadCenterlineY
 
         % If the obstacles overlap, generate a new one.
         % If the obstacles are too close to one another, we also generate a new one.
-        if ~isPointInEllipse(start,obstaclei) && ~isPointInEllipse(goal,obstaclei) && disti > min_obst_dist 
-            n_el = n_el + 1;
-            obstacles(n_el,:) = obstaclei;
+        if ~isPointInEllipse(start,obstaclei) && ~isPointInEllipse(goal,obstaclei) && disti > min_obst_dist && randomStatei(1) >= 30 && randomStatei(1) <= 230
+            if n == 1
+                if abs(obstaclei(2) - centerlineYCoordinate) <= bi
+                    n_el = n_el + 1;
+                    obstacles(n_el,:) = obstaclei;
+                end
+            else
+                n_el = n_el + 1;
+                obstacles(n_el,:) = obstaclei;
+            end
         end
     end
 end
