@@ -26,7 +26,7 @@ path.y = data.scenarios(icase,j).roadCenterline(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
-Ts   = 0.1;
+Ts   = 0.05;
 N    = length(path.x);   % Prediction horizon
 T    = N * Ts;           % Horizon length
 
