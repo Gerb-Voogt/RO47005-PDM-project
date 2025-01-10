@@ -1,7 +1,7 @@
 %% ========================================================================
 %  1) LOADING AND GENERIC SETUP
 % ========================================================================
-clear all; clc; close all;
+clear all; clc; %close all;
 import casadi.*
 
 % Check requirements for acados
@@ -14,7 +14,7 @@ veh_parameters
 if exist('SimData.mat', 'file') == 2
     data = load('SimData.mat');
 else
-    data = load('..\SETUP\TestPath.mat');
+    data = load('../SETUP/TestPathFixed.mat');
 end
 
 load index
@@ -79,7 +79,7 @@ Xp_ref_terminal = par.V0 * Ts * N;
 ocp.cost.cost_type_e      = 'NONLINEAR_LS';
 ocp.model.cost_y_expr_e   = model.x;
 ocp.cost.yref_e           = [par.V0; Xp_ref_terminal; 0; 0; 0; 0; 0];
-ocp.cost.W_e              = 5 * W_x;
+ocp.cost.W_e              = 1 * W_x;
 
 % Constraints
 vx_thd      = 170 / 3.6;             % max vx [m/s]
@@ -238,25 +238,25 @@ solver_status = ocp_solver.get('status');
 %% ========================================================================
 %  4) PLOTTING
 % ========================================================================
-t_sim       = 0 : Ts : (N * Ts);
-
-figure(1); clf(1); hold on;
-plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
-plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% t_sim       = 0 : Ts : (N * Ts);
+% 
+% figure(1); clf(1); hold on;
+% plot(x_sim(2,:), x_sim(3,:), 'b-', 'DisplayName','Closed-loop (OpenVD)');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-if data.scenarios(icase,j).obstacles ~= 0
-    plotEllipses(jobstacles)
-end
-% viscircles([Xobs, Yobs], R, 'Color','k');
-
-xlabel('X [m]'); ylabel('Y [m]');
-title('Vehicle Trajectory vs. Reference for sim',j);
-legend; grid on;
-
-figure(3); clf(3);
-plot(t_sim,x_sim(1,:))
-xlabel('Time [s]');
-ylabel('Velocity [m/s]');
-title('Velocity Over Time');
-grid on;
-
+% % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% if data.scenarios(icase,j).obstacles ~= 0
+%     plotEllipses(jobstacles)
+% end
+% % viscircles([Xobs, Yobs], R, 'Color','k');
+% 
+% xlabel('X [m]'); ylabel('Y [m]');
+% title('Vehicle Trajectory vs. Reference for sim',j);
+% legend; grid on;
+% 
+% figure(3); clf(3);
+% plot(t_sim,x_sim(1,:))
+% xlabel('Time [s]');
+% ylabel('Velocity [m/s]');
+% title('Velocity Over Time');
+% grid on;
+% 
