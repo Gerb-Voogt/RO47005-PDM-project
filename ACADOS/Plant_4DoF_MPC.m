@@ -252,7 +252,7 @@ vehicle_4dof.mR0 = par.m_r;
 %  4) SIMULATION
 % ========================================================================
 % Simulation length
-N_sim       = length(path.x)-50;   % 10-second simulation
+N_sim       = length(path.x)-N;   % 10-second simulation
 x_sim       = zeros(nx, N_sim+1);
 x_sim(:,1)  = x0;
 u_sim       = zeros(nu, N_sim);

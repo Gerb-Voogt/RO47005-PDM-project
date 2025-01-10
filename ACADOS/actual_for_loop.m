@@ -27,7 +27,7 @@ else
     data = load('../SETUP/TestPathFixed.mat');
 end
     
-for j = [2]
+for j = 3 %[3,4,6]
     
     index.j = j;
 

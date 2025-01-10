@@ -252,7 +252,7 @@ vehicle_4dof.mR0 = par.m_r;
 %  4) SIMULATION
 % ========================================================================
 % Simulation length
-N_sim       = length(path.x)-50;   % 10-second simulation
+N_sim       = length(path.x)-N;   % 10-second simulation
 x_sim       = zeros(nx, N_sim+1);
 x_sim(:,1)  = x0;
 u_sim       = zeros(nu, N_sim);
@@ -370,10 +370,13 @@ end
 %  5) PLOTTING
 % ========================================================================
 t_sim       = 0 : Ts : (N_sim * Ts);
+ref_x = data.scenarios(icase,j).roadCenterline(:,1);
+ref_y = data.scenarios(icase,j).roadCenterline(:,2);
 
 figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
 plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+plot(ref_x,ref_y,'g','DisplayName','Center line')
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 if data.scenarios(icase,j).obstacles ~= 0
     plotEllipses(jobstacles)

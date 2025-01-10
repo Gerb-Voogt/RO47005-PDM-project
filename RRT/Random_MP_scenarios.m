@@ -39,6 +39,7 @@ load('..\SETUP\TestPathFixed.mat');
 % end
 % Parameters
 
+rng(3)
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 roadWidth = 5; % Width of the road
