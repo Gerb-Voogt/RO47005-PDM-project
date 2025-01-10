@@ -43,7 +43,7 @@ roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 roadWidth = 5; % Width of the road
 maxIterations = 20000; % Max iterations for the RRT
-carRadius = 6; % Car turning radius constraint
+carRadius = 50; % Car turning radius constraint
 goalRegion = roadWidth/2;
 stepSize = 1; % Step size for motion primitives
 roadLength = roadCenterlineX(end)/2;
@@ -136,10 +136,10 @@ pathFound = false;
 % Motion primitives
 turningRadius = carRadius; % Turning radius
 motionPrimitives = [stepSize, 0;              % Straight
-                    stepSize, 0.5*stepSize/turningRadius; % Left arc
-                    stepSize, -0.5*stepSize/turningRadius
-                    stepSize, stepSize/turningRadius;
-                    stepSize, -1*stepSize/turningRadius]; % Right arc
+                    stepSize, 0.5/turningRadius; % Left arc
+                    stepSize, -0.5/turningRadius
+                    stepSize, 1/turningRadius;
+                    stepSize, -1/turningRadius]; % Right arc
 
 test = 1;
 
@@ -282,7 +282,7 @@ function DubinsPath = generateDubinsPath(state, primitive, turningRadius, stepNu
     else
         % Circular arc case
         R = 1 / curvature;
-        dTheta = step * curvature;
+        dTheta = step /R;
         stepDeltaTheta = dTheta / stepNumber;
     end
     

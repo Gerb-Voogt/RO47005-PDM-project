@@ -42,8 +42,8 @@ load('..\SETUP\TestPathFixed.mat');
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 roadWidth = 5; % Width of the road
-maxIterations = 10000; % Max iterations for the RRT
-carRadius = 6; % Car turning radius constraint
+maxIterations = 20000; % Max iterations for the RRT
+carRadius = 100; % Car turning radius constraint
 goalRegion = roadWidth/2;
 stepSize = 1; % Step size for motion primitives
 roadLength = roadCenterlineX(end)/2;
@@ -113,14 +113,13 @@ if plot_result
     xlim([0, roadLength]);
     ylim([min(roadCenterlineY)-0.75*roadWidth,max(roadCenterlineY)+0.75*roadWidth])
     % Plot the road with sinusoidal boundaries
-    fill([roadCenterlineX, fliplr(roadCenterlineX)], ...
-         [roadCenterlineY + roadWidth / 2, fliplr(roadCenterlineY - roadWidth / 2)], ...
-         [0.8, 0.8, 0.8], 'EdgeColor', 'black','FaceColor','none'); % Road boundaries
-    plot(roadCenterlineX, roadCenterlineY, 'k-', 'LineWidth', 2); % Road centerline
+    
+    plot(roadCenterlineX, roadCenterlineY, 'k--', 'LineWidth', 1); % Road centerline
+    plot(roadCenterlineX, roadCenterlineY+0.5*roadWidth, 'k-', 'LineWidth', 2); % Road edges
+    plot(roadCenterlineX, roadCenterlineY-0.5*roadWidth, 'k-', 'LineWidth', 2); % Road edges
     
     rectangle('Position',[goal(1)-goalRegion,goal(2)-goalRegion,2*goalRegion,2*goalRegion],'Curvature',[1 1],'FaceColor','green');
     plot(start(1), start(2), 'go', 'MarkerSize', 10, 'LineWidth', 2); % Start
-    plot(goal(1), goal(2), 'ro', 'MarkerSize', 10, 'LineWidth', 2); % Goal
     % Call the function to plot ellipses
     plotEllipses(obstacles);
 end
@@ -137,10 +136,10 @@ pathFound = false;
 % Motion primitives
 turningRadius = carRadius; % Turning radius
 motionPrimitives = [stepSize, 0;              % Straight
-                    stepSize, 0.5*stepSize/turningRadius; % Left arc
-                    stepSize, -0.5*stepSize/turningRadius
-                    stepSize, stepSize/turningRadius;
-                    stepSize, -1*stepSize/turningRadius]; % Right arc
+                    stepSize, 0.5/turningRadius; % Left arc
+                    stepSize, -0.5/turningRadius
+                    stepSize, 1/turningRadius;
+                    stepSize, -1/turningRadius]; % Right arc
 
 test = 1;
 
@@ -250,7 +249,7 @@ path_resampled = [path_resampled; new_points];
 % 
 % distances_road = sqrt(diff(roadCenterlineX).^2 + diff(roadCenterlineY).^2);
 % resampledRoad = [roadCenterlineX(:), roadCenterlineY(:)];
-
+drawnow;
 
 % Helper function: Apply motion primitive
 function newState = applyMotionPrimitive(state, primitive, turningRadius)
@@ -283,7 +282,7 @@ function DubinsPath = generateDubinsPath(state, primitive, turningRadius, stepNu
     else
         % Circular arc case
         R = 1 / curvature;
-        dTheta = step * curvature;
+        dTheta = step /R;
         stepDeltaTheta = dTheta / stepNumber;
     end
     

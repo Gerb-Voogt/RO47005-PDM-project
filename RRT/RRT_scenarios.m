@@ -17,7 +17,7 @@ if number_of_scenarios == 0
 end
 
 
-for icase = 1:6
+for icase = 6:6
     for j = 1:number_of_scenarios
         Random_MP_scenarios;
 
