@@ -1,4 +1,4 @@
-clc; close all;
+%clc; close all;
 
 % Set case number
 % 1 - straight line no obstacles
@@ -18,7 +18,7 @@ end
 
 
 for icase = 6:6
-    for j = 1:10
+    for j = 1
         Random_MP_scenarios;
 
         %% Save the scenario data

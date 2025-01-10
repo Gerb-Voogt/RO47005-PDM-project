@@ -16,7 +16,7 @@ icase = 6;
 % global_MPC  - global MPC + local MPC
 % RRT         - RRT + local MPC 
 
-method = "RRT";
+method = "local_MPC";
 
 index.icase = icase;
 index.method = method;
@@ -27,7 +27,7 @@ else
     data = load('../SETUP/TestPathFixed.mat');
 end
     
-for j = 3 %[3,4,6]
+for j = 1 %[3,4,6]
     
     index.j = j;
 
