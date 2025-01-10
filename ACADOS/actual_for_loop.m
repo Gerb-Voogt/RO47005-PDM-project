@@ -15,8 +15,8 @@ icase = 6;
 % local_MPC   - local MPC 
 % global_MPC  - global MPC + local MPC
 % RRT         - RRT + local MPC 
-% lane_MPC    - Lane keeping MPC oid...
-method = "RRT";
+
+method = "local_MPC";
 
 index.icase = icase;
 index.method = method;
@@ -27,7 +27,7 @@ else
     data = load('../SETUP/TestPathFixed.mat');
 end
     
-for j = 10:10
+for j = [2,4,5,6,7,8,9,10]
     
     index.j = j;
 
