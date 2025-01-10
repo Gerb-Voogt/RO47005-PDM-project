@@ -11,7 +11,7 @@ check_acados_requirements()
 veh_parameters
 
 % Load scenario + case
-data = load('TestPath.mat');
+data = load('../SETUP/TestPathFixed.mat');
 load index
 icase = index.icase;
 j = index.j;

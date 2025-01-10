@@ -14,7 +14,7 @@ veh_parameters
 if exist('SimData.mat', 'file') == 2
     data = load('SimData.mat');
 else
-    data = load('..\SETUP\TestPath.mat');
+    data = load('..\SETUP\TestPathFixed.mat');
 end
 
 load index
@@ -51,8 +51,8 @@ ocp.model = model;
 
 % Cost Weights
 w_vx     = 1e-3;
-w_Xp     = 1e1;
-w_Yp     = 1e1;
+w_Xp     = 1e2;
+w_Yp     = 1e2;
 w_vy     = 0e-2;
 w_yaw    = 0e-2;
 w_r      = 0e-2;
@@ -253,7 +253,7 @@ vehicle_4dof.mR0 = par.m_r;
 %  4) SIMULATION
 % ========================================================================
 % Simulation length
-N_sim       = length(path.x)-50;   % 10-second simulation
+N_sim       = length(path.x)-100;   % 10-second simulation
 x_sim       = zeros(nx, N_sim+1);
 x_sim(:,1)  = x0;
 u_sim       = zeros(nu, N_sim);

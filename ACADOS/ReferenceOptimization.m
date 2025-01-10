@@ -14,7 +14,7 @@ veh_parameters
 if exist('SimData.mat', 'file') == 2
     data = load('SimData.mat');
 else
-    data = load('..\SETUP\TestPath.mat');
+    data = load('../SETUP/TestPathFixed.mat');
 end
 
 load index
@@ -79,7 +79,7 @@ Xp_ref_terminal = par.V0 * Ts * N;
 ocp.cost.cost_type_e      = 'NONLINEAR_LS';
 ocp.model.cost_y_expr_e   = model.x;
 ocp.cost.yref_e           = [par.V0; Xp_ref_terminal; 0; 0; 0; 0; 0];
-ocp.cost.W_e              = 5 * W_x;
+ocp.cost.W_e              = 1 * W_x;
 
 % Constraints
 vx_thd      = 170 / 3.6;             % max vx [m/s]
