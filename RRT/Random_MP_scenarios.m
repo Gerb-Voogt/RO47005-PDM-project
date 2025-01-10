@@ -1,5 +1,5 @@
 tic % Start the timer
-plot_result = true;
+plot_result = false;
 % 1 - straight line no obstacles
 % 2 - sine wave no obstacles
 % 3 - straight line 1 obstacle
@@ -164,7 +164,7 @@ distances_test = sqrt(sum(diffs.^2, 2));
 last_point = path_resampled(end, :);
 
 % Generate n new points on a horizontal line
-spacing = v_0 * Ts;  % Distance between points
+spacing = v0 * Ts;  % Distance between points
 new_points_x = last_point(1) + (1:n) * spacing;  % Extend in x-direction
 new_points_y = repmat(last_point(2), 1, n);      % Keep y-coordinate constant
 
