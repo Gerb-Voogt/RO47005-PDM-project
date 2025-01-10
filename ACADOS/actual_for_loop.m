@@ -16,7 +16,7 @@ icase = 6;
 % global_MPC  - global MPC + local MPC
 % RRT         - RRT + local MPC 
 
-method = "local_MPC";
+method = "RRT";
 
 index.icase = icase;
 index.method = method;
@@ -27,7 +27,7 @@ else
     data = load('../SETUP/TestPathFixed.mat');
 end
     
-for j = [2,4,5,6,7,8,9,10]
+for j = [2]
     
     index.j = j;
 
@@ -67,8 +67,7 @@ for j = [2,4,5,6,7,8,9,10]
     elseif index.method == "RRT"
         save index index
         
-        addpath("../RRT/");
-        Random_MP_scenarios;
+        run('../RRT/Random_MP_scenarios.m');
 
         %% Save the scenario data
         scenarios(icase, j).roadMotionPrimitives = [path_resampled(:,1), path_resampled(:,2)]; % X, Y
@@ -76,7 +75,7 @@ for j = [2,4,5,6,7,8,9,10]
         scenarios(icase, j).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
         scenarios(icase, j).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
 
-        save('../SETUP/TestPathFixed.mat','-struct', 'data')
+        save('SimData.mat','-struct', 'data')
         
         Plant_4DoF_MPC_MotionPrim
 
@@ -86,7 +85,7 @@ for j = [2,4,5,6,7,8,9,10]
     
         % Hoe willen we de tijd voor het bepalen van global path meenemen? 
         data.scenarios(icase,j).outputMotionPrimitives = [t_sim', x_sim', u', sol_time', sol_stat'];
-        save('../SETUP/TestPathFixed.mat','-struct', 'data')
+        save('SimData.mat','-struct', 'data')
     end
 
 end
