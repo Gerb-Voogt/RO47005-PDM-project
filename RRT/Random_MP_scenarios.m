@@ -8,97 +8,23 @@ plot_result = true;
 % 6 - sine wave x obstacles
 load('..\SETUP\TestPathFixed.mat');
 
-% switch icase
-%     case 1
-%         nObstacles = 0;
-%         road_type = "straight";
-%     case 2
-%         nObstacles = 0;
-%         road_type = "sinusoidal";
-%         amplitude = 1;
-%         phase = 1;
-%     case 3
-%         nObstacles = 1;
-%         road_type = "straight";
-%     case 4
-%         nObstacles = 1;
-%         road_type = "sinusoidal";
-%         amplitude = 1;
-%         phase = 1;
-%     case 5
-%         nObstacles = 8;
-%         road_type = "straight";
-%     case 6
-%         nObstacles = 8;
-%         road_type = "sinusoidal";
-%         amplitude = 1;
-%         phase = 1;
-%     otherwise
-%         disp("Case Number should be in {1, 2, ..., 6}");
-%         exit;
-% end
-% Parameters
-
 rng(3)
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
+
 roadWidth = 5; % Width of the road
-maxIterations = 20000; % Max iterations for the RRT
-carRadius = 50; % Car turning radius constraint
+maxIterations = 10000; % Max iterations for the RRT
+carRadius = 75; % Car turning radius constraint
 goalRegion = roadWidth/2;
-stepSize = 1; % Step size for motion primitives
 roadLength = roadCenterlineX(end)/2;
+end_index = find(roadCenterlineX>roadLength,1);
 %minObstDist = 2;
 
 %% Vehicle MPC parameters (for spacing)
-step_multiplier = 10;
-v_0 = 50/3.6;
-Ts = 0.1;
-stepNumber = round(v_0 * Ts / stepSize);
-stepSize = v_0 * Ts / stepNumber;
-stepNumber = stepNumber * step_multiplier;
-
-% if road_type == "sinusoidal"
-%     % Define sinusoidal road centerline
-%     A = amplitude;
-%     B = phase;
-%     % Define sinusoidal road centerline
-%     roadLength = 100; % Example length
-%     roadWidth = 10; % Example width
-%     roadCenterlineX = linspace(0, roadLength, 10000); % High-resolution X points
-%     roadCenterlineY = roadWidth / 2 + (A * 5 * sin(B * 0.05 * roadCenterlineX)); % Sinusoidal road
-% elseif road_type == "straight"
-%     roadCenterlineX = linspace(0, roadLength, 10000); % High-resolution X points
-%     roadCenterlineY = zeros(1, length(roadCenterlineX));
-% end
-
-% % Calculate the cumulative distance along the road
-% dx = diff(roadCenterlineX);
-% dy = diff(roadCenterlineY);
-% distances = sqrt(dx.^2 + dy.^2); % Euclidean distances between consecutive points
-% cumulativeDistances = [0, cumsum(distances)]; % Cumulative distances starting at 0
-% 
-% % Resample at equal intervals
-% desiredSpacing = stepSize; % Desired spacing between points
-% newCumulativeDistances = 0:desiredSpacing:cumulativeDistances(end); % New sampling points
-% 
-% % Interpolate to find new centerline points
-% resampledX = interp1(cumulativeDistances, roadCenterlineX, newCumulativeDistances);
-% resampledY = interp1(cumulativeDistances, roadCenterlineY, newCumulativeDistances);
-% resampledRoad = [resampledX(:), resampledY(:)];
-
-
-% % Plot the results
-% if plot_result
-%     plot(roadCenterlineX, roadCenterlineY, 'b-', 'DisplayName', 'Original Centerline');
-%     hold on;
-%     legend;
-%     xlabel('X');
-%     ylabel('Y');
-%     title('Resampled Road Centerline');
-%     grid on;
-% end
-
+v0 = 50/3.6;
+Ts = 0.1; 
+stepSize = 5;
+stepNumber = 20;
 
 
 % Define the environment
@@ -154,7 +80,7 @@ test = 1;
         if mod(i, 10) == 0
             randomState = goal; %Sample goal point once every 10 iterations
         else
-            randomState = sampleRandomState(roadCenterlineX, roadCenterlineY, roadWidth);
+            randomState = sampleRandomState(roadCenterlineX(1:end_index), roadCenterlineY(1:end_index), roadWidth);
         end
     
         % Find nearest vertex in the tree
@@ -227,9 +153,12 @@ else
 end
 
 n = 100;     % Number of points to extend
-
+resample_step = v0*Ts; 
 % Original path
-path_resampled = bestDubins(1:10:end, 1:2);
+path_resampled = resamplePath(bestDubins,resample_step);
+diffs = diff(path_resampled(:, 1:2)); % Only consider x, y (ignore theta if present)
+% Compute Euclidean distances
+distances_test = sqrt(sum(diffs.^2, 2));
 
 % Get the last point of the path
 last_point = path_resampled(end, :);
@@ -245,11 +174,6 @@ new_points = [new_points_x(:), new_points_y(:)];
 % Extend the path
 path_resampled = [path_resampled; new_points];
 
-% distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
-% distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
-% 
-% distances_road = sqrt(diff(roadCenterlineX).^2 + diff(roadCenterlineY).^2);
-% resampledRoad = [roadCenterlineX(:), roadCenterlineY(:)];
 drawnow;
 
 % Helper function: Apply motion primitive
@@ -516,4 +440,28 @@ function distance = pointToEllipseDistance(point, ellipse)
     ellipseY = b * sin(t);
     distances = sqrt((ellipseX - localPoint(1)).^2 + (ellipseY - localPoint(2)).^2);
     distance = min(distances); % Closest distance to the ellipse perimeter
+end
+
+function resampledPath = resamplePath(path, newStep)
+    % Input:
+    %   path     - Nx3 array containing [x, y, theta] for each point
+    %   newStep  - Desired spacing between resampled points
+    % Output:
+    %   resampledPath - Mx3 array containing the resampled path
+
+    % Step 1: Compute the cumulative distance along the path
+    diffs = diff(path(:, 1:2)); % Differences between consecutive (x, y) points
+    segmentDistances = sqrt(sum(diffs.^2, 2)); % Euclidean distance for each segment
+    cumulativeDistances = [0; cumsum(segmentDistances)]; % Start with distance 0
+
+    % Step 2: Define the new distances at which points should be placed
+    totalLength = cumulativeDistances(end);
+    newDistances = 0:newStep:totalLength; % Uniformly spaced distances
+
+    % Step 3: Interpolate x, y, and theta
+    resampledX = interp1(cumulativeDistances, path(:, 1), newDistances, 'linear');
+    resampledY = interp1(cumulativeDistances, path(:, 2), newDistances, 'linear');
+
+    % Combine the resampled x, y, theta into the output
+    resampledPath = [resampledX', resampledY'];
 end

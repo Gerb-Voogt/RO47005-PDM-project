@@ -18,7 +18,7 @@ end
 
 
 for icase = 6:6
-    for j = 1:number_of_scenarios
+    for j = 1:10
         Random_MP_scenarios;
 
         %% Save the scenario data

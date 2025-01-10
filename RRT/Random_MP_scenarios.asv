@@ -39,23 +39,23 @@ load('..\SETUP\TestPathFixed.mat');
 % end
 % Parameters
 
+rng(3)
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
+
 roadWidth = 5; % Width of the road
-maxIterations = 20000; % Max iterations for the RRT
-carRadius = 100; % Car turning radius constraint
+maxIterations = 10000; % Max iterations for the RRT
+carRadius = 75; % Car turning radius constraint
 goalRegion = roadWidth/2;
-stepSize = 1; % Step size for motion primitives
 roadLength = roadCenterlineX(end)/2;
+end_index = find(roadCenterlineX>roadLength,1);
 %minObstDist = 2;
 
 %% Vehicle MPC parameters (for spacing)
-step_multiplier = 10;
 v_0 = 50/3.6;
-Ts = 0.1;
-stepNumber = round(v_0 * Ts / stepSize);
-stepSize = v_0 * Ts / stepNumber;
-stepNumber = stepNumber * step_multiplier;
+Ts = 0.1; %round(v_0 * Ts / stepSize);
+stepSize = 5;%v_0 * Ts / stepNumber;
+stepNumber = 20 ;%stepNumber * step_multiplier;
 
 % if road_type == "sinusoidal"
 %     % Define sinusoidal road centerline
@@ -153,7 +153,7 @@ test = 1;
         if mod(i, 10) == 0
             randomState = goal; %Sample goal point once every 10 iterations
         else
-            randomState = sampleRandomState(roadCenterlineX, roadCenterlineY, roadWidth);
+            randomState = sampleRandomState(roadCenterlineX(1:end_index), roadCenterlineY(1:end_index), roadWidth);
         end
     
         % Find nearest vertex in the tree
@@ -228,21 +228,21 @@ end
 n = 100;     % Number of points to extend
 
 % Original path
-path_resampled = bestDubins(1:10:end, 1:2);
-
-% Get the last point of the path
-last_point = path_resampled(end, :);
-
-% Generate n new points on a horizontal line
-spacing = v_0 * Ts;  % Distance between points
-new_points_x = last_point(1) + (1:n) * spacing;  % Extend in x-direction
-new_points_y = repmat(last_point(2), 1, n);      % Keep y-coordinate constant
-
-% Combine new points
-new_points = [new_points_x(:), new_points_y(:)];
-
-% Extend the path
-path_resampled = [path_resampled; new_points];
+% path_resampled = bestDubins(1:10:end, 1:2);
+% 
+% % Get the last point of the path
+% last_point = path_resampled(end, :);
+% 
+% % Generate n new points on a horizontal line
+% spacing = v_0 * Ts;  % Distance between points
+% new_points_x = last_point(1) + (1:n) * spacing;  % Extend in x-direction
+% new_points_y = repmat(last_point(2), 1, n);      % Keep y-coordinate constant
+% 
+% % Combine new points
+% new_points = [new_points_x(:), new_points_y(:)];
+% 
+% % Extend the path
+% path_resampled = [path_resampled; new_points];
 
 % distances = sqrt(sum(diff(bestDubins(:, 1:2)).^2, 2));
 % distances_resampled = sqrt(sum(diff(path_resampled(:, 1:2)).^2, 2));
