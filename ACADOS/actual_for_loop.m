@@ -70,10 +70,10 @@ for j = [2]
         run('../RRT/Random_MP_scenarios.m');
 
         %% Save the scenario data
-        scenarios(icase, j).roadMotionPrimitives = [path_resampled(:,1), path_resampled(:,2)]; % X, Y
-        scenarios(icase, j).solstatMotionPrimitives.solver_time = solver_time; % Solver time spent
-        scenarios(icase, j).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
-        scenarios(icase, j).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
+        data.scenarios(icase, j).roadMotionPrimitives = [path_resampled(:,1), path_resampled(:,2)]; % X, Y
+        data.scenarios(icase, j).solstatMotionPrimitives.solver_time = solver_time; % Solver time spent
+        data.scenarios(icase, j).solstatMotionPrimitives.path_cost = bestPathCost; % Path Cost
+        data.scenarios(icase, j).solstatMotionPrimitives.best_path_found = bestPathFound; % Whether a Path was found or not
 
         save('SimData.mat','-struct', 'data')
         
