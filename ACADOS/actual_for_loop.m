@@ -13,7 +13,7 @@ caseNumbers = 1:6;
 % local_MPC   - local MPC 
 % global_MPC  - global MPC + local MPC
 % RRT         - RRT + local MPC 
-method = "global_MPC";
+method = "local_MPC";
 index.method = method;
 
 % Load data
