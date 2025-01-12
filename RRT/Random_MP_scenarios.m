@@ -1,14 +1,18 @@
 tic % Start the timer
-plot_result = true;
+plot_result = false;
 % 1 - straight line no obstacles
 % 2 - sine wave no obstacles
 % 3 - straight line 1 obstacle
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-load('../SETUP/TestPathFixed.mat');
+if exist('SimDataFinal.mat', 'file') == 2
+    load('SimDataFinal.mat');
+else
+    load('../SETUP/TestPathFixed.mat');
+end
 
-rng(3)
+% rng(3)
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 

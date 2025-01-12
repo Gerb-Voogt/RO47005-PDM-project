@@ -13,7 +13,7 @@ caseNumbers = 1:6;
 % local_MPC   - local MPC 
 % global_MPC  - global MPC + local MPC
 % RRT         - RRT + local MPC 
-method = "local_MPC";
+method = "RRT";
 index.method = method;
 
 % Load data
@@ -100,22 +100,6 @@ for icase = caseNumbers
                 
                 % Run MPC on the motion primitives path
                 Plant_4DoF_MPC_MotionPrim
-                
-                % Optionally create and save figures of the simulation results
-                figure;
-                subplot(2,1,1);
-                plot(t_sim,x_sim(1,:), "LineWidth", 1.5)
-                xlabel('Time [s]');
-                ylabel('Velocity [m/s]');
-                title(['vx run ', num2str(j)]);
-                grid on;
-                
-                subplot(2,1,2);
-                plot(t_sim,x_sim(4,:), "LineWidth", 1.5)
-                xlabel('Time [s]');
-                ylabel('Velocity [m/s]');
-                title(['vy run ', num2str(j)]);
-                grid on;
                 
                 % Add dummy initial input, solution time and status (for initial time step)
                 u = [zeros(2,1), u_sim];     % because no input at initial timestep

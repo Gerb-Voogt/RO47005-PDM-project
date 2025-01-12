@@ -11,8 +11,8 @@ check_acados_requirements()
 veh_parameters
 
 % Load scenario + case
-if exist('SimData.mat', 'file') == 2
-    data = load('SimData.mat');
+if exist('SimDataFinal.mat', 'file') == 2
+    data = load('SimDataFinal.mat');
 else
     data = load('../SETUP/TestPathFixed.mat');
 end
@@ -375,23 +375,23 @@ t_sim       = 0 : Ts : (N_sim * Ts);
 ref_x = data.scenarios(icase,j).roadCenterline(:,1);
 ref_y = data.scenarios(icase,j).roadCenterline(:,2);
 
-figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
-plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
-plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-roadWidth = 5;
-plot(ref_x,ref_y,'g','DisplayName','Center line')
-plot(ref_x,ref_y+roadWidth,'k--','DisplayName','Road')
-plot(ref_x,ref_y-roadWidth,'k--')
+% figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
+% plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-if data.scenarios(icase,j).obstacles ~= 0
-    plotEllipses(jobstacles)
-end
-% viscircles([Xobs, Yobs], R, 'Color','k');
-
-xlabel('X [m]');ylabel('Y [m]');
-title('Vehicle Trajectory vs. Reference for sim',j);
-% legend; 
-grid on;
+% roadWidth = 5;
+% plot(ref_x,ref_y,'g','DisplayName','Center line')
+% plot(ref_x,ref_y+roadWidth,'k--','DisplayName','Road')
+% plot(ref_x,ref_y-roadWidth,'k--')
+% % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% if data.scenarios(icase,j).obstacles ~= 0
+%     plotEllipses(jobstacles)
+% end
+% % viscircles([Xobs, Yobs], R, 'Color','k');
+% 
+% xlabel('X [m]');ylabel('Y [m]');
+% title('Vehicle Trajectory vs. Reference for sim',j);
+% % legend; 
+% grid on;
 
 % figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
 % plot(t_sim, delta_data, 'LineWidth',2);
