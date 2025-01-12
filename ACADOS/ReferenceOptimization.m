@@ -11,8 +11,8 @@ check_acados_requirements()
 veh_parameters
 
 %Load reference path
-if exist('SimData.mat', 'file') == 2
-    data = load('SimData.mat');
+if exist('SimDataFinal.mat', 'file') == 2
+    data = load('SimDataFinal.mat');
 else
     data = load('../SETUP/TestPathFixed.mat');
 end
@@ -52,7 +52,7 @@ w_yaw    = 0e-2;
 w_r      = 0e-2;
 w_delta  = 0e1;
 
-w_d_delta= 1e1;
+w_d_delta= 1e3;
 w_Fx = 1e-5;
 
 W_x = diag([w_vx, w_Xp, w_Yp, w_vy, w_yaw, w_r, w_delta]);
@@ -259,4 +259,4 @@ solver_status = ocp_solver.get('status');
 % ylabel('Velocity [m/s]');
 % title('Velocity Over Time');
 % grid on;
-% 
+

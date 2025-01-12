@@ -11,8 +11,8 @@ check_acados_requirements()
 veh_parameters
 
 % Load scenario + case
-if exist('SimData.mat', 'file') == 2
-    data = load('SimData.mat');
+if exist('SimDataFinal.mat', 'file') == 2
+    data = load('SimDataFinal.mat');
 else
     data = load('..\SETUP\TestPathFixed.mat');
 end
@@ -25,9 +25,9 @@ path.x = data.scenarios(icase,j).roadOptimalReference(:,1);
 path.y = data.scenarios(icase,j).roadOptimalReference(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
-% Time and horizon settings
+% Time and horizon setting
 Ts   = 0.05;
-N    = 20;               % Prediction horizon
+N    = 9;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
 TSPAN = 0 : Ts/resol : Ts;
@@ -55,7 +55,7 @@ w_Xp     = 1e2;
 w_Yp     = 1e2;
 w_vy     = 0e-2;
 w_yaw    = 0e-2;
-w_r      = 0e-2;
+w_r      = 1e-2;
 w_delta  = 0e1;
 
 w_d_delta= 1e1;
@@ -371,19 +371,19 @@ end
 %  5) PLOTTING
 % ========================================================================
 t_sim       = 0 : Ts : (N_sim * Ts);
-
-figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
-plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
-plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% 
+% figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
+% plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-if data.scenarios(icase,j).obstacles ~= 0
-    plotEllipses(jobstacles)
-end
-% viscircles([Xobs, Yobs], R, 'Color','k');
-
-xlabel('X [m]');ylabel('Y [m]');
-title('Vehicle Trajectory vs. Reference for sim',j);
-legend; grid on;
+% % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+% if data.scenarios(icase,j).obstacles ~= 0
+%     plotEllipses(jobstacles)
+% end
+% % viscircles([Xobs, Yobs], R, 'Color','k');
+% 
+% xlabel('X [m]');ylabel('Y [m]');
+% title('Vehicle Trajectory vs. Reference for sim',j);
+% legend; grid on;
 
 % figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
 % plot(t_sim, delta_data, 'LineWidth',2);
