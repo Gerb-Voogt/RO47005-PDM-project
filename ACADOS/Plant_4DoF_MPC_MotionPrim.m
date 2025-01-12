@@ -26,7 +26,7 @@ Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
 Ts   = 0.05;
-N    = 50;               % Prediction horizon
+N    = 18;               % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
 TSPAN = 0 : Ts/resol : Ts;
@@ -48,13 +48,15 @@ x_adv0 = [path.x(1); path.y(1); Yaw0; 0; par.V0; 0; 0; 0];
 ocp = AcadosOcp();
 ocp.model = model;
 
+
+N = 18;
 % Cost Weights
-w_vx     = 1e-3;
-w_Xp     = 1e1;
-w_Yp     = 1e1;
-w_vy     = 0e-2;
-w_yaw    = 0e-2;
-w_r      = 0e-2;
+w_vx     = 1e1;
+w_Xp     = 1e2;
+w_Yp     = 1e2;
+w_vy     = 1e-1;
+w_yaw    = 0e1;
+w_r      = 1e-2;
 w_delta  = 0e1;
 
 w_d_delta= 1e1;
@@ -376,7 +378,10 @@ ref_y = data.scenarios(icase,j).roadCenterline(:,2);
 figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
 plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
 plot(path.x, path.y, 'r--', 'DisplayName','Reference');
+roadWidth = 5;
 plot(ref_x,ref_y,'g','DisplayName','Center line')
+plot(ref_x,ref_y+roadWidth,'k--','DisplayName','Road')
+plot(ref_x,ref_y-roadWidth,'k--')
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 if data.scenarios(icase,j).obstacles ~= 0
     plotEllipses(jobstacles)
@@ -385,7 +390,8 @@ end
 
 xlabel('X [m]');ylabel('Y [m]');
 title('Vehicle Trajectory vs. Reference for sim',j);
-legend; grid on;
+% legend; 
+grid on;
 
 % figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
 % plot(t_sim, delta_data, 'LineWidth',2);

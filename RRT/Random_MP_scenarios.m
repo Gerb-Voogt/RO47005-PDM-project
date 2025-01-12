@@ -1,12 +1,12 @@
 tic % Start the timer
-plot_result = false;
+plot_result = true;
 % 1 - straight line no obstacles
 % 2 - sine wave no obstacles
 % 3 - straight line 1 obstacle
 % 4 - sine wave 1 obstacle
 % 5 - straight line x obstacles
 % 6 - sine wave x obstacles
-load('..\SETUP\TestPathFixed.mat');
+load('../SETUP/TestPathFixed.mat');
 
 rng(3)
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
@@ -22,7 +22,7 @@ end_index = find(roadCenterlineX>roadLength,1);
 
 %% Vehicle MPC parameters (for spacing)
 v0 = 50/3.6;
-Ts = 0.1; 
+Ts = 0.05; 
 stepSize = 5;
 stepNumber = 20;
 
@@ -153,28 +153,28 @@ else
 end
 
 n = 100;     % Number of points to extend
-resample_step = v0*Ts; 
-% Original path
-path_resampled = resamplePath(bestDubins,resample_step);
-diffs = diff(path_resampled(:, 1:2)); % Only consider x, y (ignore theta if present)
-% Compute Euclidean distances
-distances_test = sqrt(sum(diffs.^2, 2));
+if bestPathFound
+    resample_step = v0*Ts; 
+    % Original path
+    path_resampled = resamplePath(bestDubins,resample_step);
+    diffs = diff(path_resampled(:, 1:2)); % Only consider x, y (ignore theta if present)
+    % Compute Euclidean distances
+    distances_test = sqrt(sum(diffs.^2, 2));
 
-% Get the last point of the path
-last_point = path_resampled(end, :);
+    % Get the last point of the path
+    last_point = path_resampled(end, :);
 
-% Generate n new points on a horizontal line
-spacing = v0 * Ts;  % Distance between points
-new_points_x = last_point(1) + (1:n) * spacing;  % Extend in x-direction
-new_points_y = repmat(last_point(2), 1, n);      % Keep y-coordinate constant
+    spacing = v0 * Ts;  % Distance between points
+    new_points_x = last_point(1) + (1:n) * spacing;  % Extend in x-direction
+    new_points_y = repmat(last_point(2), 1, n);      % Keep y-coordinate constant
 
-% Combine new points
-new_points = [new_points_x(:), new_points_y(:)];
+    % Combine new points
+    new_points = [new_points_x(:), new_points_y(:)];
 
-% Extend the path
-path_resampled = [path_resampled; new_points];
-
-drawnow;
+    % Extend the path
+    path_resampled = [path_resampled; new_points];
+    drawnow;
+end
 
 % Helper function: Apply motion primitive
 function newState = applyMotionPrimitive(state, primitive, turningRadius)
