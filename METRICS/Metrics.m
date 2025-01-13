@@ -54,21 +54,26 @@ for method = methods
             clearances = [];
             collision = 0;
     
-            if icase>=3
+            if icase>=3 %select scenarios with objects
                 obstacles = scenarios(icase,j).obstacles;
                 for ipoint = 1:length(route)
                     point = route(ipoint,:);
-                    
+
+                    %calculate smallest distance to an ellipse and which
+                    %ellipse it is 
                     [minDistance,nEllipse] = minDistanceToEllipses(point,obstacles);
-                    if isPointInEllipse(point,obstacles(nEllipse,:))
-                        collision = collision + 1;
+
+                    %Calculate if point is in closest ellipse
+                    if isPointInEllipse(point,obstacles(nEllipse,:)) 
+                        collision = collision + 1; %
                         clearances(ipoint) = -minDistance;
                     else
                         clearances(ipoint) = minDistance;
                     end
                 end 
             end
-
+            
+            %Calculate path length 
             path_length = 0;
             for ipoint = 2:length(route)
                 point_old = route(ipoint-1,:);
@@ -77,6 +82,7 @@ for method = methods
                 path_length = path_length + dist;
             end
             
+            %Output metrics to scenarios struct
             if method == "local_MPC"
                 scenarios(icase,j).metricsLocalMPC.collisions = collision;
                 scenarios(icase,j).metricsLocalMPC.clearances = clearances';
@@ -111,15 +117,6 @@ save metrics_data scenarios
 
 
 function isInside = isPointInEllipse(point, ellipse)
-    % ISPOINTINELLIPSE Checks if a point is inside an ellipse.
-    %
-    % Inputs:
-    %   point  - A 1x2 vector [x, y] representing the point.
-    %   ellipse - A 1x5 vector [x_center, y_center, semi_major, semi_minor, rotation_angle]
-    %             representing the ellipse parameters.
-    %
-    % Output:
-    %   isInside - Boolean, true if the point is inside the ellipse, false otherwise.
 
     % Extract ellipse parameters
     xCenter = ellipse(1);
@@ -145,15 +142,6 @@ function isInside = isPointInEllipse(point, ellipse)
 end
 
 function [minDistance,nEllipse] = minDistanceToEllipses(point, ellipseSet)
-    % MINDISTANCETOELLIPSES Calculates the minimum distance from a point to a set of ellipses.
-    %
-    % Inputs:
-    %   point      - A 1x2 vector [x, y] representing the point.
-    %   ellipseSet - A Nx5 matrix, where each row represents an ellipse with the format
-    %                [x_center, y_center, semi_major, semi_minor, rotation_angle].
-    %
-    % Output:
-    %   minDistance - The smallest distance from the point to the set of ellipses.
 
     % Initialize the minimum distance to infinity
     minDistance = Inf;
@@ -175,14 +163,6 @@ function [minDistance,nEllipse] = minDistanceToEllipses(point, ellipseSet)
 end
 
 function distance = pointToEllipseDistance(point, ellipse)
-    % POINTTOELLIPSEDISTANCE Calculates the minimum distance from a point to an ellipse.
-    %
-    % Inputs:
-    %   point   - A 1x2 vector [x, y] representing the point.
-    %   ellipse - A 1x5 vector [x_center, y_center, semi_major, semi_minor, rotation_angle].
-    %
-    % Output:
-    %   distance - The shortest distance from the point to the ellipse's perimeter.
 
     % Extract ellipse parameters
     xCenter = ellipse(1);

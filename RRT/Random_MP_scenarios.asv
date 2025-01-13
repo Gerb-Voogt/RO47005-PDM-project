@@ -182,8 +182,6 @@ end
 
 % Helper function: Apply motion primitive
 function newState = applyMotionPrimitive(state, primitive, turningRadius)
-    %finds the next state when applying one specific motion primitive
-    
     step = primitive(1);
     curvature = primitive(2);
     theta = state(3);
@@ -201,7 +199,7 @@ function newState = applyMotionPrimitive(state, primitive, turningRadius)
 end
 
 function DubinsPath = generateDubinsPath(state, primitive, turningRadius, stepNumber)
-    %Generates Dubins Path from state, using primitives
+    %
     step = primitive(1);
     curvature = primitive(2);
     theta = state(3);
