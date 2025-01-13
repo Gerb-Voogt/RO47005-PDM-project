@@ -1,20 +1,20 @@
+%% ========================================================================
+%  Random_MP_scenarios FILE
+% ========================================================================
+% This code below performs the RRT algorithm with motion primitives. It 
+% imports the scenario via either SimDataFinal.mat or TestPathFixed.mat.
+% The route is first saved with a large sampling rate to be able to check
+% collisions, but is resampled at the end to allow for local MPC sampling
+% times.
+
 tic % Start the timer
 plot_result = true;
-% 1 - straight line no obstacles
-% 2 - sine wave no obstacles
-% 3 - straight line 1 obstacle
-% 4 - sine wave 1 obstacle
-% 5 - straight line x obstacles
-% 6 - sine wave x obstacles
+
 if exist('SimDataFinal.mat', 'file') == 2
     load('SimDataFinal.mat');
 else
     load('../SETUP/TestPathFixed.mat');
 end
-
-icase = 6;
-j = 4;
-% rng(3)
 
 %Define scenario parameters
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);

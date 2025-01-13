@@ -1,18 +1,17 @@
+%% ========================================================================
+%  Random_MP_scenarios FILE
+% ========================================================================
+% This code below performs the RRT algorithm with motion primitives. It 
+% imports the scenario via S
+
 tic % Start the timer
-plot_result = false;
-% 1 - straight line no obstacles
-% 2 - sine wave no obstacles
-% 3 - straight line 1 obstacle
-% 4 - sine wave 1 obstacle
-% 5 - straight line x obstacles
-% 6 - sine wave x obstacles
+plot_result = true;
+
 if exist('SimDataFinal.mat', 'file') == 2
     load('SimDataFinal.mat');
 else
     load('../SETUP/TestPathFixed.mat');
 end
-
-% rng(3)
 
 %Define scenario parameters
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
@@ -182,6 +181,8 @@ end
 
 % Helper function: Apply motion primitive
 function newState = applyMotionPrimitive(state, primitive, turningRadius)
+    %finds the next state when applying one specific motion primitive
+    
     step = primitive(1);
     curvature = primitive(2);
     theta = state(3);
@@ -199,7 +200,7 @@ function newState = applyMotionPrimitive(state, primitive, turningRadius)
 end
 
 function DubinsPath = generateDubinsPath(state, primitive, turningRadius, stepNumber)
-    %
+    %Generates Dubins Path from state, using primitives
     step = primitive(1);
     curvature = primitive(2);
     theta = state(3);
