@@ -1,5 +1,5 @@
 tic % Start the timer
-plot_result = false;
+plot_result = true;
 % 1 - straight line no obstacles
 % 2 - sine wave no obstacles
 % 3 - straight line 1 obstacle
@@ -12,6 +12,8 @@ else
     load('../SETUP/TestPathFixed.mat');
 end
 
+icase = 6;
+j = 4;
 % rng(3)
 
 %Define scenario parameters

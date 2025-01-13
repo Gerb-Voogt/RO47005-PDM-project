@@ -21,12 +21,13 @@ load index
 icase = index.icase;
 j = index.j;
 
+% Compute trajectory based on centreline
 path.x = data.scenarios(icase,j).roadCenterline(:,1);
 path.y = data.scenarios(icase,j).roadCenterline(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon settings
-Ts   = 0.05;
+Ts   = 0.05;             % Sampling time
 N    = length(path.x);   % Prediction horizon
 T    = N * Ts;           % Horizon length
 
@@ -231,6 +232,7 @@ if status ~= 0
     ocp_solver.print('stat');
 end
 
+% Collision free trajectory stored in x_sim
 x_sim = ocp_solver.get('x');
 solver_time = ocp_solver.get('time_tot');
 solver_status = ocp_solver.get('status');

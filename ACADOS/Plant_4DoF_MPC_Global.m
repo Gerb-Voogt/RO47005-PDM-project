@@ -21,16 +21,18 @@ load index
 icase = index.icase;
 j = index.j;
 
+% Reference path from trajectory optimization
 path.x = data.scenarios(icase,j).roadOptimalReference(:,1);
 path.y = data.scenarios(icase,j).roadOptimalReference(:,2);
 Yaw0 = atan((path.y(2)-path.y(1))/(path.x(2)-path.x(1)));
 
 % Time and horizon setting
-Ts   = 0.05;
-N    = 9;               % Prediction horizon
+Ts   = 0.05;             % Sampling time
+N    = 9;                % Prediction horizon
 T    = N * Ts;           % Horizon length
 resol = 500;             % Resolution for substeps
-TSPAN = 0 : Ts/resol : Ts;
+TSPAN = 0 : Ts/resol : Ts; %Time vector for plant simulation
+
 
 % Create the simple car model for MPC
 model = car_PDM_model(par);
@@ -371,19 +373,19 @@ end
 %  5) PLOTTING
 % ========================================================================
 t_sim       = 0 : Ts : (N_sim * Ts);
-% 
-% figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
-% plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
+
+figure(1+(j-1)*5); clf(1+(j-1)*5); hold on;
+plot(x_sim(2,:), x_sim(3,:),'-o', 'DisplayName','Closed-loop (OpenVD)');
+plot(path.x, path.y, 'r--', 'DisplayName','Reference');
 % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-% % plot(path.x, path.y, 'r--', 'DisplayName','Reference');
-% if data.scenarios(icase,j).obstacles ~= 0
-%     plotEllipses(jobstacles)
-% end
-% % viscircles([Xobs, Yobs], R, 'Color','k');
-% 
-% xlabel('X [m]');ylabel('Y [m]');
-% title('Vehicle Trajectory vs. Reference for sim',j);
-% legend; grid on;
+if data.scenarios(icase,j).obstacles ~= 0
+    plotEllipses(jobstacles)
+end
+% viscircles([Xobs, Yobs], R, 'Color','k');
+
+xlabel('X [m]');ylabel('Y [m]');
+title('Vehicle Trajectory vs. Reference for sim',j);
+legend; grid on;
 
 % figure(2+(j-1)*5); clf(2+(j-1)*5); hold on;
 % plot(t_sim, delta_data, 'LineWidth',2);
