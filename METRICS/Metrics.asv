@@ -23,7 +23,7 @@ nCase = size(scenarios,1);
 nScenarios = size(scenarios,2);
 roadLength = 300;
 %Ranging over all cases and scenarios
-for method = methods
+for method = "l
     for icase = 1:nCase
         for j = 1:nScenarios
             if method == "local_MPC"
@@ -39,14 +39,6 @@ for method = methods
             
             %Define the path in between 0 and roadlength and select x an y 
             endindex = find(output(:,3)>roadLength,1);
-
-            if isempty(endindex)
-                disp("failed in:")
-                disp(icase)
-                disp(j)
-                endindex = length(output);
-            end
-
             route = output(1:endindex,3:4);%adjust to where t, x and y is in data
              
 
@@ -80,7 +72,7 @@ for method = methods
             if method == "local_MPC"
                 scenarios(icase,j).metricsLocalMPC.collisions = collision;
                 scenarios(icase,j).metricsLocalMPC.clearances = clearances';
-                scenarios(icase,j).metricsLocalMPC.time_to_goal = output(endindex,1);
+                scenarios(icase,j).metricsLocalMPC.time_to_goal = output(1:endindex,1);
                 scenarios(icase,j).metricsLocalMPC.path_length = path_length;
                 scenarios(icase,j).metricsLocalMPC.local_solver_time = output(1:endindex,10);
                 scenarios(icase,j).metricsLocalMPC.global_solver_time = 0;
@@ -88,7 +80,7 @@ for method = methods
             elseif method == "global_MPC"
                 scenarios(icase,j).metricsGlobalMPC.collisions = collision;
                 scenarios(icase,j).metricsGlobalMPC.clearances = clearances';
-                scenarios(icase,j).metricsGlobalMPC.time_to_goal = output(endindex,1);
+                scenarios(icase,j).metricsGlobalMPC.time_to_goal = output(1:endindex,1);
                 scenarios(icase,j).metricsGlobalMPC.path_length = path_length;
                 scenarios(icase,j).metricsGlobalMPC.local_solver_time = output(1:endindex,10);
                 scenarios(icase,j).metricsGlobalMPC.global_solver_time = scenarios(icase,j).solstatOptimalReference.solver_time;
@@ -96,7 +88,7 @@ for method = methods
             elseif method == "RRT"
                 scenarios(icase,j).metricsMotionPrimitives.collisions = collision;
                 scenarios(icase,j).metricsMotionPrimitives.clearances = clearances';
-                scenarios(icase,j).metricsMotionPrimitives.time_to_goal = output(endindex,1);
+                scenarios(icase,j).metricsMotionPrimitives.time_to_goal = output(1:endindex,1);
                 scenarios(icase,j).metricsMotionPrimitives.path_length = path_length;
                 scenarios(icase,j).metricsMotionPrimitives.local_solver_time = output(1:endindex,10);
                 scenarios(icase,j).metricsMotionPrimitives.global_solver_time = scenarios(icase,j).solstatMotionPrimitives.solver_time;
