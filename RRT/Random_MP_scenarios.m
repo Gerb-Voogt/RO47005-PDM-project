@@ -13,22 +13,24 @@ else
 end
 
 % rng(3)
+
+%Define scenario parameters
 roadCenterlineX = scenarios(icase,j).roadCenterline(:,1);
 roadCenterlineY = scenarios(icase,j).roadCenterline(:,2);
 
 roadWidth = 5; % Width of the road
 maxIterations = 10000; % Max iterations for the RRT
 carRadius = 75; % Car turning radius constraint
-goalRegion = roadWidth/2;
-roadLength = roadCenterlineX(end)/2;
+goalRegion = roadWidth/2; %radius of goalRegion
+roadLength = roadCenterlineX(end)/2; %length of road, the centerline is longer than this for MPC solver
 end_index = find(roadCenterlineX>roadLength,1);
-%minObstDist = 2;
+
 
 %% Vehicle MPC parameters (for spacing)
 v0 = 50/3.6;
 Ts = 0.05; 
-stepSize = 5;
-stepNumber = 20;
+stepSize = 5; %Distance traveled in step
+stepNumber = 20; %Amount of discretisation points in step
 
 
 % Define the environment
@@ -55,7 +57,7 @@ if plot_result
     plotEllipses(obstacles);
 end
 
-% Initialize 
+% Initialize RRT parameters and motion primitives
 tree.vertices = start; % [x, y, theta]
 tree.edges = [];
 tree.dubins = [];
@@ -72,74 +74,72 @@ motionPrimitives = [stepSize, 0;              % Straight
                     stepSize, 1/turningRadius;
                     stepSize, -1/turningRadius]; % Right arc
 
-test = 1;
 
 % RRT loop
-    % RRT loop
-    test = 1;
-    i = 0; % Initialize iteration counter
-    while i < maxIterations && test == 1
-        i = i + 1; % Increment iteration counter
-        % Random sampling with goal bias
-        if mod(i, 10) == 0
-            randomState = goal; %Sample goal point once every 10 iterations
-        else
-            randomState = sampleRandomState(roadCenterlineX(1:end_index), roadCenterlineY(1:end_index), roadWidth);
-        end
-    
-        % Find nearest vertex in the tree
-        distances = vecnorm(tree.vertices(:, 1:2) - randomState(1:2), 2, 2);
-        [~, nearestIdx] = min(distances);
-        nearestVertex = tree.vertices(nearestIdx, :);
-    
-    
-        % Apply motion primitives
-    
-        for idx = 1:size(motionPrimitives, 1)
-            newState = applyMotionPrimitive(nearestVertex, motionPrimitives(idx, :), turningRadius);
+test = 1;
+i = 0; % Initialize iteration counter
+while i < maxIterations && test == 1
+    i = i + 1; % Increment iteration counter
+    % Random sampling with goal bias
+    if mod(i, 10) == 0
+        randomState = goal; %Sample goal point once every 10 iterations
+    else
+        randomState = sampleRandomState(roadCenterlineX(1:end_index), roadCenterlineY(1:end_index), roadWidth);
+    end
+
+    % Find nearest vertex in the tree
+    distances = vecnorm(tree.vertices(:, 1:2) - randomState(1:2), 2, 2);
+    [~, nearestIdx] = min(distances);
+    nearestVertex = tree.vertices(nearestIdx, :);
+
+
+    % Apply motion primitives
+
+    for idx = 1:size(motionPrimitives, 1)
+        newState = applyMotionPrimitive(nearestVertex, motionPrimitives(idx, :), turningRadius);
+        
+        % Check collision
+         if isWithinRoad(newState, roadCenterlineX, roadCenterlineY, roadWidth) && ...
+            ~isCollisionPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber, obstacles)
+            newDubins = generateDubinsPath(nearestVertex, motionPrimitives(idx,:), turningRadius, stepNumber);
             
-            % Check collision
-             if isWithinRoad(newState, roadCenterlineX, roadCenterlineY, roadWidth) && ...
-                ~isCollisionPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber, obstacles)
-                newDubins = generateDubinsPath(nearestVertex, motionPrimitives(idx,:), turningRadius, stepNumber);
-                % Add new vertex and edge to the tree
-                newDubinsFlat = reshape(newDubins,1,[]);
-                tree.vertices = [tree.vertices; newState];
-                tree.dubins = [tree.dubins;newDubinsFlat];
-                tree.edges = [tree.edges; nearestIdx, size(tree.vertices, 1)];
-                newCost = tree.cost(nearestIdx) + motionPrimitives(idx, 1);
-                tree.cost = [tree.cost; newCost];
-                if plot_result
-                    plotPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber);
+            % Add new vertex and edge to the tree
+            newDubinsFlat = reshape(newDubins,1,[]);
+            tree.vertices = [tree.vertices; newState];
+            tree.dubins = [tree.dubins;newDubinsFlat];
+            tree.edges = [tree.edges; nearestIdx, size(tree.vertices, 1)];
+            newCost = tree.cost(nearestIdx) + motionPrimitives(idx, 1);
+            tree.cost = [tree.cost; newCost];
+
+            if plot_result
+                plotPath(nearestVertex, motionPrimitives(idx, :), turningRadius, stepNumber);
+            end
+
+            % Check if goal is reached
+            if norm(newState(1:2) - goal(1:2)) <= goalRegion
+                pathFound = true;
+                tempPath = [goal];
+                tempDubins = [];
+                tempIdx = size(tree.vertices, 1);
+                tempCost = newCost;
+                while tempIdx ~= 1
+                    tempPath = [tree.vertices(tempIdx, :); tempPath];
+                    tempDubins = [reshape(tree.dubins(tempIdx-1, :),[],3); tempDubins];
+                    tempIdx = tree.edges(tree.edges(:, 2) == tempIdx, 1);
                 end
-                % Plot the motion primitive path
-                
-    
-                % Check if goal is reached
-                if norm(newState(1:2) - goal(1:2)) <= goalRegion
-                    pathFound = true;
-                    tempPath = [goal];
-                    tempDubins = [];
-                    tempIdx = size(tree.vertices, 1);
-                    tempCost = newCost;
-                    while tempIdx ~= 1
-                        tempPath = [tree.vertices(tempIdx, :); tempPath];
-                        tempDubins = [reshape(tree.dubins(tempIdx-1, :),[],3); tempDubins];
-                        tempIdx = tree.edges(tree.edges(:, 2) == tempIdx, 1);
-                    end
-                    tempPath = [start; tempPath];
+                tempPath = [start; tempPath];
+                bestPath = tempPath;
+                test = 0;
+                if tempCost < bestPathCost
                     bestPath = tempPath;
-                    test = 0;
-                    if tempCost < bestPathCost
-                        bestPath = tempPath;
-                        
-                        bestPathCost = tempCost;
-                        bestDubins = tempDubins;
-                    end                    
-                end
+                    
+                    bestPathCost = tempCost;
+                    bestDubins = tempDubins;
+                end                    
             end
         end
     end
+end
 
 % Final results
 if ~isempty(bestPath)
@@ -156,7 +156,7 @@ else
     bestPathFound = false;
 end
 
-n = 100;     % Number of points to extend
+n = 100;     % Number of points to extend for MPC horizon
 if bestPathFound
     resample_step = v0*Ts; 
     % Original path
